@@ -26,4 +26,14 @@ public class Book{
         this.copies = copies;
         this.isAvailable = copies > 0;
     }
+    @Override
+    public String toString() {
+        return "Book{" +
+                "isbn='" + isbn + '\'' +
+                ", title='" + title + '\'' +
+                ", author='" + author + '\'' +
+                ", isAvailable=" + isAvailable +
+                ", copies=" + copies +
+                '}';
+    }
 }
