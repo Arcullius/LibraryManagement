@@ -20,7 +20,7 @@ public class Book{
     public boolean isAvailable() { return isAvailable; }
     public int getCopies() { return copies; }
     
-    public void setIsbn(int isbn){this.isbn = isbn;}
+    public void setIsbn(int isbn){ this.isbn = isbn; }
     public void setIsAvailable(boolean available) { isAvailable = available; }
     public void setCopies(int copies) { 
         this.copies = copies;
