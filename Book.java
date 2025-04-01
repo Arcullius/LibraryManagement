@@ -13,7 +13,7 @@ public class Book{
         this.isAvailable = copies > 0;
     }
 
-    //get and set mthodes 
+    //get and set methods 
     public int getIsbn() { return isbn; }
     public String getTitle() { return title; }
     public String getAuthor() { return author; }
