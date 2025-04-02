@@ -26,10 +26,12 @@ public class User{
     public void setBooksBorrowed(ArrayList<Book> booksBorrowed){ this.booksBorrowed = booksBorrowed; }
     public void setFine(double fine){ this.fine = fine; }
 
+    //adds a book to the user's borrowed books
     public void borrowBook(Book book) {
         booksBorrowed.add(book);
     }
 
+    //removes book from the user's borrowed books
     public void returnBook(Book book) {
         for (int i = 0; i < booksBorrowed.size(); i++) {
             if (booksBorrowed.get(i).getIsbn()==(book.getIsbn())) {
@@ -38,13 +40,16 @@ public class User{
             }
         }
     }
+
+    //Returns the number of books a user has borrowed
     public int getBorrowedBooksCount() {
         return booksBorrowed.size();
     }
 
+    //toString method
     @Override
     public String toString() {
-        return "User{" +
+        return "User: {" +
                 "id='" + id + '\'' +
                 ", name='" + name + '\'' +
                 ", borrowedBooks=" + booksBorrowed.size() +
