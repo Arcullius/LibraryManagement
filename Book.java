@@ -1,10 +1,12 @@
 public class Book{
     
+    //book variables
     private int isbn;
     private String title, author;
     private boolean isAvailable;
     private int copies;
 
+    //constructor
     public Book(int isbn, String title, String author, int copies) {
         this.isbn = isbn;
         this.title = title;
@@ -26,9 +28,11 @@ public class Book{
         this.copies = copies;
         this.isAvailable = copies > 0;
     }
+
+    //toString method
     @Override
     public String toString() {
-        return "Book{" +
+        return "Book: {" +
                 "isbn='" + isbn + '\'' +
                 ", title='" + title + '\'' +
                 ", author='" + author + '\'' +

@@ -1,5 +1,8 @@
 public class main{
     public static void main(String[] args) {
-        System.out.println("Hello");
+
+        //print line test
+        Book b = new Book(12345678, "The Odyssey", "Homer", 3);
+        System.out.println(b);
     }
 }
