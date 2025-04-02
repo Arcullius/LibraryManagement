@@ -1,7 +1,7 @@
 # Library Management
 
 ## Plan: 
--Book Class (with all book properites):/
+-Book Class (with all book properites):\
       -Constructor: Book(int isbn, String title, String author, int copies)
     
 -User Class (with all user properties):
