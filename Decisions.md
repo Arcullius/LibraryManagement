@@ -19,12 +19,7 @@
               this.fine = 0.0;
         
       Transaction(int transactionId, User user, Book book, LocalDate borrowDate) {
-              this.transactionId = transactionId;
-              this.user = user;
-              this.book = book;
-              this.borrowDate = borrowDate;
-              this.fine = 0.0;
-      
+             
 
 
 
