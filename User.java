@@ -3,7 +3,7 @@ public class User{
     //user variables
     private int id;
     private String name;
-    private int fine;
+    private double fine;
     private ArrayList<Book> booksBorrowed;
 
     //constructor
@@ -18,11 +18,11 @@ public class User{
     public int getId() { return this.id; }
     public String getName() { return this.name; }
     public ArrayList<Book> getBooksBorrowed() { return this.booksBorrowed; }
-    public int getFine() { return this.fine; }
+    public double getFine() { return this.fine; }
 
     //set methods
     public void setId(int id){ this.id = id; }
     public void setName(String name){ this.name = name; }
     public void setBooksBorrowed(ArrayList<Book> booksBorrowed){ this.booksBorrowed = booksBorrowed; }
-    public void setFine(int fine){ this.fine = fine; }
+    public void setFine(double fine){ this.fine = fine; }
 }
