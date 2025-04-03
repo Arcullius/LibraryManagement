@@ -23,4 +23,39 @@ public class Transaction {
         this.borrowDate = borrowDate;
         this.fine = 0.0;
     }
-}
+    public void returnBook() {
+        this.returnDate = LocalDate.now();
+        calculateFine();
+    }
+
+    private void calculateFine() {
+        if (returnDate != null) {
+            long daysOverdue = returnDate.toEpochDay() - borrowDate.toEpochDay() - 14;
+            if (daysOverdue > 0) {
+                this.fine = daysOverdue;
+            }
+        }
+    }
+
+    // Getters
+    public int getTransactionId() { return transactionId; }
+    public User getUser() { return user; }
+    public Book getBook() { return book; }
+    public LocalDate getBorrowDate() { return borrowDate; }
+    public LocalDate getReturnDate() { return returnDate; }
+    public double getFine() { return fine; }
+
+    @Override
+    public String toString() {
+        return "Transaction{" +
+                "transactionId='" + transactionId + '\'' +
+                ", user=" + user.getName() +
+                ", book=" + book.getTitle() +
+                ", borrowDate=" + borrowDate +
+                ", returnDate=" + returnDate +
+                ", fine=" + fine +
+                '}';
+    }
+} 
+
+
