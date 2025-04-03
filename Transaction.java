@@ -49,12 +49,12 @@ public class Transaction {
     @Override
     public String toString() {
         return "Transaction{" +
-                "transactionId='" + transactionId + '\'' +
-                ", user=" + user.getName() +
-                ", book=" + book.getTitle() +
-                ", borrowDate=" + borrowDate +
-                ", returnDate=" + returnDate +
-                ", fine=" + fine +
+                "transaction Id='" + transactionId + '\'' +
+                ", User=" + user.getName() +
+                ", Book=" + book.getTitle() +
+                ", Borrow Date=" + borrowDate +
+                ", Return Date=" + returnDate +
+                ", Fine=" + fine +
                 '}';
     }
 } 

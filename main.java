@@ -24,7 +24,7 @@ public class main{
         System.out.println(u.getId());
         System.out.println(u.getName());
         System.out.println(u);
-        Transaction t = new Transaction(12345, u, b);
+        Transaction t = new Transaction(12345,u, b);
         System.out.println(t.getTransactionId());
         System.out.println(t.getUser());
         System.out.println(t.getBook());
