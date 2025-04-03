@@ -30,6 +30,7 @@ public class Transaction {
 
     private void calculateFine() {
         if (returnDate != null) {
+            //using long to avoide overflow
             long daysOverdue = returnDate.toEpochDay() - borrowDate.toEpochDay() - 14;
             if (daysOverdue > 0) {
                 this.fine = daysOverdue;
