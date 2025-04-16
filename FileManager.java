@@ -14,4 +14,13 @@ public class FileManager {
     public Connection getConnection(){
         return con;
     }
+    public void closeConnection() {
+        try {
+            if (con!= null) {
+                con.close();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 }
