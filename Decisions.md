@@ -6,7 +6,7 @@
 #### Why SQLite?
 - **Persistence**: Data persists between program runs
 - **Relational Structure**: Natural fit for library management (books, users, transactions)
-- **ACID Compliance**: Ensures data integrity
+- Ensures data integrity
 - **Lightweight**: No separate server required
 - **Cross-platform**: Works on all major operating systems
 
