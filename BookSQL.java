@@ -50,18 +50,26 @@ public class BookSQL {
     }
 
     // Database operations
-    public void save() {
-        try {
-            String sql = "INSERT OR REPLACE INTO Book (isbn, title, author, isAvailable, copies) VALUES (?, ?, ?, ?, ?)";
-            
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
+   
 
     private void updateBook() {
         try {
             String sql = "UPDATE Book SET title = ?, author = ?, isAvailable = ?, copies = ? WHERE isbn = ?";
+            PreparedStatement ps = db.getConnection().prepareStatement(sql);
+            ps.setString(1, title);
+            ps.setString(2, author);
+            ps.setBoolean(3, isAvailable);
+            ps.setInt(4, copies);
+            ps.setInt(5, isbn);
+            ps.executeUpdate();
+            ps.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+    public void save() {
+        try {
+            String sql = "INSERT OR REPLACE INTO Book (isbn, title, author, isAvailable, copies) VALUES (?, ?, ?, ?, ?)";
             
         } catch (SQLException e) {
             e.printStackTrace();
