@@ -1,7 +1,6 @@
-import java.util.ArrayList;
-import java.util.Scanner;
 import java.sql.*;
 import java.time.LocalDate;
+import java.util.Scanner;
 
 public class Library {
     private FileManager db;
@@ -163,7 +162,7 @@ public class Library {
 
     private void addBook() {
         System.out.print("Enter ISBN: ");
-        int isbn = scanner.nextInt();
+        String isbn = scanner.nextLine();
         scanner.nextLine();
         System.out.print("Enter title: ");
         String title = scanner.nextLine();

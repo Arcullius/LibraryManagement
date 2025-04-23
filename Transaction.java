@@ -42,7 +42,7 @@ public class Transaction {
             PreparedStatement ps = db.getConnection().prepareStatement(sql);
             ps.setInt(1, transactionId);
             ps.setInt(2, user.getId());
-            ps.setInt(3, book.getIsbn());
+            ps.setString(3, book.getIsbn());
             ps.setDate(4, java.sql.Date.valueOf(borrowDate));
             ps.setDate(5, returnDate != null ? java.sql.Date.valueOf(returnDate) : null);
             ps.setDouble(6, fine);

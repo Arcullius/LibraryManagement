@@ -1,14 +1,14 @@
 import java.sql.*;
 
 public class Book {
-    private int isbn;
+    private String isbn;
     private String title;
     private String author;
     private boolean isAvailable;
     private int copies;
     private static FileManager db;
 
-    public Book(int isbn, String title, String author, int copies) {
+    public Book(String isbn, String title, String author, int copies) {
         this.isbn = isbn;
         this.title = title;
         this.author = author;
@@ -21,14 +21,14 @@ public class Book {
     }
 
     // Getters
-    public int getIsbn() { return isbn; }
+    public String getIsbn() { return isbn; }
     public String getTitle() { return title; }
     public String getAuthor() { return author; }
     public boolean isAvailable() { return isAvailable; }
     public int getCopies() { return copies; }
 
     // Setters with database updates
-    public void setIsbn(int isbn) { 
+    public void setIsbn(String isbn) { 
         this.isbn = isbn;
         updateBook();
     }
@@ -54,7 +54,7 @@ public class Book {
         try {
             String sql = "INSERT OR REPLACE INTO Book (isbn, title, author, isAvailable, copies) VALUES (?, ?, ?, ?, ?)";
             PreparedStatement ps = db.getConnection().prepareStatement(sql);
-            ps.setInt(1, isbn);
+            ps.setString(1, isbn);
             ps.setString(2, title);
             ps.setString(3, author);
             ps.setBoolean(4, isAvailable);
@@ -74,7 +74,7 @@ public class Book {
             ps.setString(2, author);
             ps.setBoolean(3, isAvailable);
             ps.setInt(4, copies);
-            ps.setInt(5, isbn);
+            ps.setString(5, isbn);
             ps.executeUpdate();
             ps.close();
         } catch (SQLException e) {
@@ -91,7 +91,7 @@ public class Book {
             
             if (rs.next()) {
                 Book book = new Book(
-                    rs.getInt("isbn"),
+                    rs.getString("isbn"),
                     rs.getString("title"),
                     rs.getString("author"),
                     rs.getInt("copies")
