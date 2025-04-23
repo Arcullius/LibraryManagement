@@ -26,7 +26,7 @@ public class Library {
 
     private void showLoginMenu() {
         clearConsole();
-        System.out.println("\n=== Library Management System ===");
+        System.out.println("=== Library Management System ===");
         System.out.println("1. Login");
         System.out.println("2. Create Account");
         System.out.println("3. Exit");
@@ -56,7 +56,7 @@ public class Library {
     private void showAdminMenu() {
         while (true) {
             clearConsole();
-            System.out.println("\n=== Admin Menu ===");
+            System.out.println("=== Admin Menu ===");
             System.out.println("1. Add Book");
             System.out.println("2. Remove Book");
             System.out.println("3. Add User");
@@ -92,7 +92,7 @@ public class Library {
     private void showUserMenu() {
         while (true) {
             clearConsole();
-            System.out.println("\n=== User Menu ===");
+            System.out.println("=== User Menu ===");
             System.out.println("1. View Available Books");
             System.out.println("2. Borrow Book");
             System.out.println("3. Return Book");
@@ -292,18 +292,37 @@ public class Library {
     }
 
     private void borrowBook() {
+        System.out.println("Search by:");
+        System.out.println("1. ISBN");
+        System.out.println("2. Title");
+        System.out.print("Enter choice (1 or 2): ");
+        String choice = scanner.nextLine();
 
-        System.out.print("Enter ISBN of book to borrow: ");
-        String isbn = scanner.nextLine();
-        
+        String searchSql;
+        String searchValue;
+
         try {
-            // Check if book is available
-            String checkSql = "SELECT * FROM Book WHERE isbn = ? AND isAvailable = true";
-            PreparedStatement checkPs = db.getConnection().prepareStatement(checkSql);
-            checkPs.setString(1, isbn);
+            if (choice.equals("1")) {
+                System.out.print("Enter ISBN of book to borrow: ");
+                searchValue = scanner.nextLine();
+                searchSql = "SELECT * FROM Book WHERE isbn = ? AND isAvailable = true";
+            } else if (choice.equals("2")) {
+                System.out.print("Enter title of book to borrow: ");
+                searchValue = scanner.nextLine();
+                searchSql = "SELECT * FROM Book WHERE title LIKE ? AND isAvailable = true";
+                searchValue = "%" + searchValue + "%"; // support partial matches
+            } else {
+                System.out.println("Invalid choice.");
+                return;
+            }
+
+            PreparedStatement checkPs = db.getConnection().prepareStatement(searchSql);
+            checkPs.setString(1, searchValue);
             ResultSet rs = checkPs.executeQuery();
-            
+
             if (rs.next()) {
+                String isbn = rs.getString("isbn");
+
                 // Create transaction
                 String transactionSql = "INSERT INTO Transactions (userId, bookIsbn, borrowDate) VALUES (?, ?, ?)";
                 PreparedStatement transPs = db.getConnection().prepareStatement(transactionSql);
@@ -319,10 +338,12 @@ public class Library {
                 updatePs.executeUpdate();
 
                 System.out.println("Book borrowed successfully!");
-            } else {
-                System.out.println("Book is not available!");
+            } 
+            else {
+                System.out.println("Book is not available or doesn't exist.");
             }
-        } catch (SQLException e) {
+        } 
+        catch (SQLException e) {
             System.out.println("Error borrowing book: " + e.getMessage());
         }
         promptEnter();
