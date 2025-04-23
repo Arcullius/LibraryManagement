@@ -293,7 +293,97 @@ public class Library {
         promptEnter();
     }
 
+    private void borrowBookByISBN(String isbn) throws SQLException {
+        // Create transaction
+        String transactionSql = "INSERT INTO Transactions (userId, bookIsbn, borrowDate) VALUES (?, ?, ?)";
+        PreparedStatement transPs = db.getConnection().prepareStatement(transactionSql);
+        transPs.setInt(1, currentUser.getId());
+        transPs.setString(2, isbn);
+        transPs.setDate(3, java.sql.Date.valueOf(LocalDate.now()));
+        transPs.executeUpdate();
+    
+        // Update book availability
+        String updateSql = "UPDATE Book SET copies = copies - 1, isAvailable = (copies > 1) WHERE isbn = ?";
+        PreparedStatement updatePs = db.getConnection().prepareStatement(updateSql);
+        updatePs.setString(1, isbn);
+        updatePs.executeUpdate();
+    
+        System.out.println("Book borrowed successfully!");
+    }
+
     private void borrowBook() {
+        System.out.println("Search by:");
+        System.out.println("1. ISBN");
+        System.out.println("2. Title");
+        System.out.print("Enter choice (1 or 2): ");
+        String choice = scanner.nextLine();
+
+        String searchSql;
+        String searchValue;
+
+        try {
+            if (choice.equals("1")) {
+                System.out.print("Enter ISBN of book to borrow: ");
+                searchValue = scanner.nextLine();
+                searchSql = "SELECT * FROM Book WHERE isbn = ? AND isAvailable = true";
+
+                PreparedStatement checkPs = db.getConnection().prepareStatement(searchSql);
+                checkPs.setString(1, searchValue);
+                ResultSet rs = checkPs.executeQuery();
+
+                if (rs.next()) {
+                    borrowBookByISBN(rs.getString("isbn"));
+                } else {
+                    System.out.println("Book is not available or doesn't exist.");
+                }
+            } 
+            else if (choice.equals("2")) {
+                System.out.print("Enter title of book to borrow: ");
+                searchValue = scanner.nextLine();
+                searchSql = "SELECT * FROM Book WHERE title LIKE ? AND isAvailable = true";
+
+                PreparedStatement checkPs = db.getConnection().prepareStatement(searchSql);
+                checkPs.setString(1, "%" + searchValue + "%");
+                ResultSet rs = checkPs.executeQuery();
+
+                List<String> isbns = new ArrayList<>();
+                int index = 1;
+                while (rs.next()) {
+                    String title = rs.getString("title");
+                    String isbn = rs.getString("isbn");
+                    int copies = rs.getInt("copies");
+
+                    System.out.printf("%d. %s (ISBN: %s, Copies: %d)%n", index++, title, isbn, copies);
+                    isbns.add(isbn);
+                }
+
+                if (isbns.isEmpty()) {
+                    System.out.println("No books found matching that title.");
+                    promptEnter();
+                    return;
+                }
+
+                System.out.print("Enter the number of the book to borrow (or 0 to cancel): ");
+                int choiceNum = Integer.parseInt(scanner.nextLine());
+
+                if (choiceNum == 0) {
+                    System.out.println("Canceled.");
+                } else if (choiceNum > 0 && choiceNum <= isbns.size()) {
+                    borrowBookByISBN(isbns.get(choiceNum - 1));
+                } else {
+                    System.out.println("Invalid selection.");
+                }
+            } 
+            else {
+                System.out.println("Invalid choice.");
+            }
+        } 
+        catch (SQLException | NumberFormatException e) {
+            System.out.println("Error borrowing book: " + e.getMessage());
+        }
+
+        promptEnter();
+        /*
         System.out.println("Search by:");
         System.out.println("1. ISBN");
         System.out.println("2. Title");
@@ -349,65 +439,10 @@ public class Library {
             System.out.println("Error borrowing book: " + e.getMessage());
         }
         promptEnter();
+        */
     }
 
     private void returnBook() {
-        /*
-        clearConsole();
-        System.out.print("Enter ISBN of book to return: ");
-        String isbn = scanner.nextLine();
-        
-        try {
-            // Find the transaction
-            String findSql = "SELECT * FROM Transactions WHERE userId = ? AND bookIsbn = ? AND returnDate IS NULL";
-            PreparedStatement findPs = db.getConnection().prepareStatement(findSql);
-            findPs.setInt(1, currentUser.getId());
-            findPs.setString(2, isbn);
-            ResultSet rs = findPs.executeQuery();
-            
-            if (rs.next()) {
-                int transactionId = rs.getInt("transactionId");
-                LocalDate borrowDate = rs.getDate("borrowDate").toLocalDate();
-                LocalDate returnDate = LocalDate.now();
-                
-                // Calculate fine
-                long daysLate = returnDate.toEpochDay() - borrowDate.toEpochDay() - 14;
-                double fine = Math.max(0, daysLate);
-
-                // Update transaction
-                String updateTransSql = "UPDATE Transactions SET returnDate = ?, fine = ? WHERE transactionId = ?";
-                PreparedStatement updateTransPs = db.getConnection().prepareStatement(updateTransSql);
-                updateTransPs.setDate(1, java.sql.Date.valueOf(returnDate));
-                updateTransPs.setDouble(2, fine);
-                updateTransPs.setInt(3, transactionId);
-                updateTransPs.executeUpdate();
-
-                // Update book availability
-                String updateBookSql = "UPDATE Book SET copies = copies + 1, isAvailable = true WHERE isbn = ?";
-                PreparedStatement updateBookPs = db.getConnection().prepareStatement(updateBookSql);
-                updateBookPs.setString(1, isbn);
-                updateBookPs.executeUpdate();
-
-                // Update user fine
-                String updateUserSql = "UPDATE User SET fine = fine + ? WHERE id = ?";
-                PreparedStatement updateUserPs = db.getConnection().prepareStatement(updateUserSql);
-                updateUserPs.setDouble(1, fine);
-                updateUserPs.setInt(2, currentUser.getId());
-                updateUserPs.executeUpdate();
-
-                System.out.println("Book returned successfully!");
-                if (fine > 0) {
-                    System.out.println("Late fee charged: $" + fine);
-                }
-            } else {
-                System.out.println("No active borrowing found for this book!");
-            }
-        } catch (SQLException e) {
-            System.out.println("Error returning book: " + e.getMessage());
-        }
-        promptEnter();
-        */
-
         clearConsole();
 
         try {
