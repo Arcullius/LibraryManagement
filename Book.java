@@ -82,11 +82,11 @@ public class Book {
         }
     }
 
-    public static Book getBook(int isbn) {
+    public static Book getBook(String isbn) {
         try {
             String sql = "SELECT * FROM Book WHERE isbn = ?";
             PreparedStatement ps = db.getConnection().prepareStatement(sql);
-            ps.setInt(1, isbn);
+            ps.setString(1, isbn);
             ResultSet rs = ps.executeQuery();
             
             if (rs.next()) {
@@ -106,11 +106,11 @@ public class Book {
         return null;
     }
 
-    public static void deleteBook(int isbn) {
+    public static void deleteBook(String isbn) {
         try {
             String sql = "DELETE FROM Book WHERE isbn = ?";
             PreparedStatement ps = db.getConnection().prepareStatement(sql);
-            ps.setInt(1, isbn);
+            ps.setString(1, isbn);
             ps.executeUpdate();
             ps.close();
         } catch (SQLException e) {

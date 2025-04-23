@@ -178,7 +178,7 @@ public class Library {
 
     private void removeBook() {
         System.out.print("Enter ISBN of book to remove: ");
-        int isbn = scanner.nextInt();
+        String isbn = scanner.nextLine();
         Book.deleteBook(isbn);
         System.out.println("Book removed successfully!");
     }
@@ -222,7 +222,7 @@ public class Library {
             ResultSet rs = stmt.executeQuery(sql);
 
             while (rs.next()) {
-                System.out.println("ISBN: " + rs.getInt("isbn"));
+                System.out.println("ISBN: " + rs.getString("isbn"));
                 System.out.println("Title: " + rs.getString("title"));
                 System.out.println("Author: " + rs.getString("author"));
                 System.out.println("Available: " + rs.getBoolean("isAvailable"));
@@ -261,7 +261,7 @@ public class Library {
             ResultSet rs = stmt.executeQuery(sql);
 
             while (rs.next()) {
-                System.out.println("ISBN: " + rs.getInt("isbn"));
+                System.out.println("ISBN: " + rs.getString("isbn"));
                 System.out.println("Title: " + rs.getString("title"));
                 System.out.println("Author: " + rs.getString("author"));
                 System.out.println("Copies Available: " + rs.getInt("copies"));
@@ -275,13 +275,13 @@ public class Library {
 
     private void borrowBook() {
         System.out.print("Enter ISBN of book to borrow: ");
-        int isbn = scanner.nextInt();
+        String isbn = scanner.nextLine();
         
         try {
             // Check if book is available
             String checkSql = "SELECT * FROM Book WHERE isbn = ? AND isAvailable = true";
             PreparedStatement checkPs = db.getConnection().prepareStatement(checkSql);
-            checkPs.setInt(1, isbn);
+            checkPs.setString(1, isbn);
             ResultSet rs = checkPs.executeQuery();
             
             if (rs.next()) {
@@ -289,14 +289,14 @@ public class Library {
                 String transactionSql = "INSERT INTO Transactions (userId, bookIsbn, borrowDate) VALUES (?, ?, ?)";
                 PreparedStatement transPs = db.getConnection().prepareStatement(transactionSql);
                 transPs.setInt(1, currentUser.getId());
-                transPs.setInt(2, isbn);
+                transPs.setString(2, isbn);
                 transPs.setDate(3, java.sql.Date.valueOf(LocalDate.now()));
                 transPs.executeUpdate();
 
                 // Update book availability
                 String updateSql = "UPDATE Book SET copies = copies - 1, isAvailable = (copies > 1) WHERE isbn = ?";
                 PreparedStatement updatePs = db.getConnection().prepareStatement(updateSql);
-                updatePs.setInt(1, isbn);
+                updatePs.setString(1, isbn);
                 updatePs.executeUpdate();
 
                 System.out.println("Book borrowed successfully!");
@@ -310,14 +310,14 @@ public class Library {
 
     private void returnBook() {
         System.out.print("Enter ISBN of book to return: ");
-        int isbn = scanner.nextInt();
+        String isbn = scanner.nextLine();
         
         try {
             // Find the transaction
             String findSql = "SELECT * FROM Transactions WHERE userId = ? AND bookIsbn = ? AND returnDate IS NULL";
             PreparedStatement findPs = db.getConnection().prepareStatement(findSql);
             findPs.setInt(1, currentUser.getId());
-            findPs.setInt(2, isbn);
+            findPs.setString(2, isbn);
             ResultSet rs = findPs.executeQuery();
             
             if (rs.next()) {
@@ -340,7 +340,7 @@ public class Library {
                 // Update book availability
                 String updateBookSql = "UPDATE Book SET copies = copies + 1, isAvailable = true WHERE isbn = ?";
                 PreparedStatement updateBookPs = db.getConnection().prepareStatement(updateBookSql);
-                updateBookPs.setInt(1, isbn);
+                updateBookPs.setString(1, isbn);
                 updateBookPs.executeUpdate();
 
                 // Update user fine
@@ -372,7 +372,7 @@ public class Library {
             ResultSet rs = ps.executeQuery();
 
             while (rs.next()) {
-                System.out.println("ISBN: " + rs.getInt("isbn"));
+                System.out.println("ISBN: " + rs.getString("isbn"));
                 System.out.println("Title: " + rs.getString("title"));
                 System.out.println("Author: " + rs.getString("author"));
                 System.out.println("Borrowed Date: " + rs.getDate("borrowDate"));

@@ -82,12 +82,12 @@ public class Transaction {
         }
     }
 
-    public static Transaction getTransaction(int userId, int bookIsbn) {
+    public static Transaction getTransaction(int userId, String bookIsbn) {
         try {
             String sql = "SELECT * FROM Transactions WHERE userId = ? AND bookIsbn = ? AND returnDate IS NULL";
             PreparedStatement ps = db.getConnection().prepareStatement(sql);
             ps.setInt(1, userId);
-            ps.setInt(2, bookIsbn);
+            ps.setString(2, bookIsbn);
             ResultSet rs = ps.executeQuery();
             
             if (rs.next()) {
