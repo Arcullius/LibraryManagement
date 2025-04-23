@@ -1,3 +1,4 @@
+import java.io.IOException;
 import java.sql.*;
 import java.time.LocalDate;
 import java.util.Scanner;
@@ -24,6 +25,7 @@ public class Library {
     }
 
     private void showLoginMenu() {
+        clearConsole();
         System.out.println("\n=== Library Management System ===");
         System.out.println("1. Login");
         System.out.println("2. Create Account");
@@ -47,11 +49,13 @@ public class Library {
                 break;
             default:
                 System.out.println("Invalid option!");
+                promptEnter();
         }
     }
 
     private void showAdminMenu() {
         while (true) {
+            clearConsole();
             System.out.println("\n=== Admin Menu ===");
             System.out.println("1. Add Book");
             System.out.println("2. Remove Book");
@@ -80,12 +84,14 @@ public class Library {
                     return;
                 default:
                     System.out.println("Invalid option!");
+                    promptEnter();
             }
         }
     }
 
     private void showUserMenu() {
         while (true) {
+            clearConsole();
             System.out.println("\n=== User Menu ===");
             System.out.println("1. View Available Books");
             System.out.println("2. Borrow Book");
@@ -110,6 +116,7 @@ public class Library {
                     return;
                 default:
                     System.out.println("Invalid option!");
+                    promptEnter();
             }
         }
     }
@@ -123,6 +130,7 @@ public class Library {
         currentUser = User.login(username, password);
         if (currentUser == null) {
             System.out.println("Invalid credentials!");
+            promptEnter();
         } else {
             System.out.println("Welcome, " + currentUser.getName() + "!");
         }
@@ -157,9 +165,11 @@ public class Library {
         } catch (SQLException e) {
             System.out.println("Error creating account: " + e.getMessage());
         }
+        promptEnter();
     }
 
     private void addBook() {
+        clearConsole();
         System.out.print("Enter ISBN: ");
         String isbn = scanner.nextLine();
         scanner.nextLine();
@@ -173,13 +183,16 @@ public class Library {
         Book book = new Book(isbn, title, author, copies);
         book.save();
         System.out.println("Book added successfully!");
+        promptEnter();
     }
 
     private void removeBook() {
+        clearConsole();
         System.out.print("Enter ISBN of book to remove: ");
         String isbn = scanner.nextLine();
         Book.deleteBook(isbn);
         System.out.println("Book removed successfully!");
+        promptEnter();
     }
 
     private void addUser() {
@@ -187,10 +200,12 @@ public class Library {
     }
 
     private void removeUser() {
+        clearConsole();
         System.out.print("Enter user ID to remove: ");
         int userId = scanner.nextInt();
         User.deleteUser(userId);
         System.out.println("User removed successfully!");
+        promptEnter();
     }
 
     private void viewAllTransactions() {
@@ -198,7 +213,7 @@ public class Library {
             String sql = "SELECT * FROM Transactions t JOIN User u ON t.userId = u.id JOIN Book b ON t.bookIsbn = b.isbn";
             Statement stmt = db.getConnection().createStatement();
             ResultSet rs = stmt.executeQuery(sql);
-
+            clearConsole();
             while (rs.next()) {
                 System.out.println("Transaction ID: " + rs.getInt("transactionId"));
                 System.out.println("User: " + rs.getString("fname") + " " + rs.getString("lname"));
@@ -212,6 +227,7 @@ public class Library {
         } catch (SQLException e) {
             System.out.println("Error viewing transactions: " + e.getMessage());
         }
+        promptEnter();
     }
 
     private void viewAllBooks() {
@@ -219,7 +235,7 @@ public class Library {
             String sql = "SELECT * FROM Book";
             Statement stmt = db.getConnection().createStatement();
             ResultSet rs = stmt.executeQuery(sql);
-
+            clearConsole();
             while (rs.next()) {
                 System.out.println("ISBN: " + rs.getString("isbn"));
                 System.out.println("Title: " + rs.getString("title"));
@@ -232,6 +248,7 @@ public class Library {
         } catch (SQLException e) {
             System.out.println("Error viewing books: " + e.getMessage());
         }
+        promptEnter();
     }
 
     private void viewAllUsers() {
@@ -239,7 +256,7 @@ public class Library {
             String sql = "SELECT * FROM User WHERE isAdmin = false";
             Statement stmt = db.getConnection().createStatement();
             ResultSet rs = stmt.executeQuery(sql);
-
+            clearConsole();
             while (rs.next()) {
                 System.out.println("ID: " + rs.getInt("id"));
                 System.out.println("Name: " + rs.getString("fname") + " " + rs.getString("lname"));
@@ -251,6 +268,7 @@ public class Library {
         } catch (SQLException e) {
             System.out.println("Error viewing users: " + e.getMessage());
         }
+        promptEnter();
     }
 
     private void viewAvailableBooks() {
@@ -258,7 +276,7 @@ public class Library {
             String sql = "SELECT * FROM Book WHERE isAvailable = true";
             Statement stmt = db.getConnection().createStatement();
             ResultSet rs = stmt.executeQuery(sql);
-
+            clearConsole();
             while (rs.next()) {
                 System.out.println("ISBN: " + rs.getString("isbn"));
                 System.out.println("Title: " + rs.getString("title"));
@@ -270,9 +288,11 @@ public class Library {
         } catch (SQLException e) {
             System.out.println("Error viewing available books: " + e.getMessage());
         }
+        promptEnter();
     }
 
     private void borrowBook() {
+
         System.out.print("Enter ISBN of book to borrow: ");
         String isbn = scanner.nextLine();
         
@@ -305,9 +325,11 @@ public class Library {
         } catch (SQLException e) {
             System.out.println("Error borrowing book: " + e.getMessage());
         }
+        promptEnter();
     }
 
     private void returnBook() {
+        clearConsole();
         System.out.print("Enter ISBN of book to return: ");
         String isbn = scanner.nextLine();
         
@@ -359,6 +381,7 @@ public class Library {
         } catch (SQLException e) {
             System.out.println("Error returning book: " + e.getMessage());
         }
+        promptEnter();
     }
 
     private void viewMyBorrowedBooks() {
@@ -369,7 +392,7 @@ public class Library {
             PreparedStatement ps = db.getConnection().prepareStatement(sql);
             ps.setInt(1, currentUser.getId());
             ResultSet rs = ps.executeQuery();
-
+            clearConsole();
             while (rs.next()) {
                 System.out.println("ISBN: " + rs.getString("isbn"));
                 System.out.println("Title: " + rs.getString("title"));
@@ -382,6 +405,7 @@ public class Library {
         } catch (SQLException e) {
             System.out.println("Error viewing borrowed books: " + e.getMessage());
         }
+        promptEnter();
     }
 
     private void viewMyFines() {
@@ -390,7 +414,7 @@ public class Library {
             PreparedStatement ps = db.getConnection().prepareStatement(sql);
             ps.setInt(1, currentUser.getId());
             ResultSet rs = ps.executeQuery();
-
+            clearConsole();
             if (rs.next()) {
                 double fine = rs.getDouble("fine");
                 System.out.println("Your current fine balance: $" + fine);
@@ -399,8 +423,26 @@ public class Library {
         } catch (SQLException e) {
             System.out.println("Error viewing fines: " + e.getMessage());
         }
+        promptEnter();
     }
+    public static void clearConsole() {
+        try {
+            String os = System.getProperty("os.name");
+
+            if (os.contains("Windows")) {
+                new ProcessBuilder("cmd", "/c", "cls").inheritIO().start().waitFor();
+            } else {
+                new ProcessBuilder("clear").inheritIO().start().waitFor();
+            }
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+        }
     }
+    public void promptEnter(){
+        System.out.println("Press \"ENTER\" to continue...");
+        scanner.nextLine();
+     }
+}
 
 
 
