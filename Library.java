@@ -1,6 +1,8 @@
 import java.io.IOException;
 import java.sql.*;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 public class Library {
@@ -350,6 +352,7 @@ public class Library {
     }
 
     private void returnBook() {
+        /*
         clearConsole();
         System.out.print("Enter ISBN of book to return: ");
         String isbn = scanner.nextLine();
@@ -400,6 +403,97 @@ public class Library {
                 System.out.println("No active borrowing found for this book!");
             }
         } catch (SQLException e) {
+            System.out.println("Error returning book: " + e.getMessage());
+        }
+        promptEnter();
+        */
+
+        clearConsole();
+
+        try {
+            // Step 1: Get list of currently borrowed books by this user
+            String borrowedSql = "SELECT t.transactionId, b.title, b.isbn, t.borrowDate " +
+                                "FROM Transactions t " +
+                                "JOIN Book b ON t.bookIsbn = b.isbn " +
+                                "WHERE t.userId = ? AND t.returnDate IS NULL";
+            PreparedStatement borrowedPs = db.getConnection().prepareStatement(borrowedSql);
+            borrowedPs.setInt(1, currentUser.getId());
+            ResultSet rs = borrowedPs.executeQuery();
+
+            List<Integer> transactionIds = new ArrayList<>();
+            List<String> isbns = new ArrayList<>();
+
+            int index = 1;
+            System.out.println("Books you have currently borrowed:");
+            while (rs.next()) {
+                int transactionId = rs.getInt("transactionId");
+                String title = rs.getString("title");
+                String isbn = rs.getString("isbn");
+                LocalDate borrowDate = rs.getDate("borrowDate").toLocalDate();
+
+                System.out.printf("%d. %s (ISBN: %s) - Borrowed on %s%n", index, title, isbn, borrowDate);
+                transactionIds.add(transactionId);
+                isbns.add(isbn);
+                index++;
+            }
+
+            if (transactionIds.isEmpty()) {
+                System.out.println("You don't have any books to return.");
+                promptEnter();
+                return;
+            }
+
+            // Step 2: Ask user to choose which book to return
+            System.out.print("Enter the number of the book to return: ");
+            int choice = Integer.parseInt(scanner.nextLine());
+
+            if (choice < 1 || choice > transactionIds.size()) {
+                System.out.println("Invalid selection.");
+                promptEnter();
+                return;
+            }
+
+            int transactionId = transactionIds.get(choice - 1);
+            String isbn = isbns.get(choice - 1);
+
+            // Step 3: Calculate fine
+            String dateSql = "SELECT borrowDate FROM Transactions WHERE transactionId = ?";
+            PreparedStatement datePs = db.getConnection().prepareStatement(dateSql);
+            datePs.setInt(1, transactionId);
+            ResultSet dateRs = datePs.executeQuery();
+            dateRs.next();
+            LocalDate borrowDate = dateRs.getDate("borrowDate").toLocalDate();
+            LocalDate returnDate = LocalDate.now();
+            long daysLate = returnDate.toEpochDay() - borrowDate.toEpochDay() - 14;
+            double fine = Math.max(0, daysLate);
+
+            // Step 4: Update transaction
+            String updateTransSql = "UPDATE Transactions SET returnDate = ?, fine = ? WHERE transactionId = ?";
+            PreparedStatement updateTransPs = db.getConnection().prepareStatement(updateTransSql);
+            updateTransPs.setDate(1, java.sql.Date.valueOf(returnDate));
+            updateTransPs.setDouble(2, fine);
+            updateTransPs.setInt(3, transactionId);
+            updateTransPs.executeUpdate();
+
+            // Step 5: Update book availability
+            String updateBookSql = "UPDATE Book SET copies = copies + 1, isAvailable = true WHERE isbn = ?";
+            PreparedStatement updateBookPs = db.getConnection().prepareStatement(updateBookSql);
+            updateBookPs.setString(1, isbn);
+            updateBookPs.executeUpdate();
+
+            // Step 6: Update user's fine
+            String updateUserSql = "UPDATE User SET fine = fine + ? WHERE id = ?";
+            PreparedStatement updateUserPs = db.getConnection().prepareStatement(updateUserSql);
+            updateUserPs.setDouble(1, fine);
+            updateUserPs.setInt(2, currentUser.getId());
+            updateUserPs.executeUpdate();
+
+            System.out.println("Book returned successfully!");
+            if (fine > 0) {
+                System.out.println("Late fee charged: $" + fine);
+            }
+        } 
+        catch (SQLException | NumberFormatException e) {
             System.out.println("Error returning book: " + e.getMessage());
         }
         promptEnter();
