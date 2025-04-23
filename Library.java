@@ -3,12 +3,11 @@ import java.time.LocalDate;
 import java.util.Scanner;
 
 public class Library {
-    private FileManager db;
+    public static FileManager db= new FileManager();
     private User currentUser;
     private Scanner scanner;
 
     public Library() {
-        this.db = new FileManager();
         this.scanner = new Scanner(System.in);
     }
 

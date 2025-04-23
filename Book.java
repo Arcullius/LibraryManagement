@@ -6,7 +6,8 @@ public class Book {
     private String author;
     private boolean isAvailable;
     private int copies;
-    private static FileManager db;
+    
+   
 
     public Book(String isbn, String title, String author, int copies) {
         this.isbn = isbn;
@@ -15,9 +16,7 @@ public class Book {
         this.copies = copies;
         this.isAvailable = copies > 0;
         
-        if (db == null) {
-            db = new FileManager();
-        }
+        
     }
 
     // Getters
@@ -53,7 +52,7 @@ public class Book {
     public void save() {
         try {
             String sql = "INSERT OR REPLACE INTO Book (isbn, title, author, isAvailable, copies) VALUES (?, ?, ?, ?, ?)";
-            PreparedStatement ps = db.getConnection().prepareStatement(sql);
+            PreparedStatement ps = Library.db.getConnection().prepareStatement(sql);
             ps.setString(1, isbn);
             ps.setString(2, title);
             ps.setString(3, author);
@@ -69,7 +68,7 @@ public class Book {
     private void updateBook() {
         try {
             String sql = "UPDATE Book SET title = ?, author = ?, isAvailable = ?, copies = ? WHERE isbn = ?";
-            PreparedStatement ps = db.getConnection().prepareStatement(sql);
+            PreparedStatement ps = Library.db.getConnection().prepareStatement(sql);
             ps.setString(1, title);
             ps.setString(2, author);
             ps.setBoolean(3, isAvailable);
@@ -85,7 +84,7 @@ public class Book {
     public static Book getBook(String isbn) {
         try {
             String sql = "SELECT * FROM Book WHERE isbn = ?";
-            PreparedStatement ps = db.getConnection().prepareStatement(sql);
+            PreparedStatement ps = Library.db.getConnection().prepareStatement(sql);
             ps.setString(1, isbn);
             ResultSet rs = ps.executeQuery();
             
@@ -109,7 +108,7 @@ public class Book {
     public static void deleteBook(String isbn) {
         try {
             String sql = "DELETE FROM Book WHERE isbn = ?";
-            PreparedStatement ps = db.getConnection().prepareStatement(sql);
+            PreparedStatement ps = Library.db.getConnection().prepareStatement(sql);
             ps.setString(1, isbn);
             ps.executeUpdate();
             ps.close();

@@ -11,11 +11,7 @@ public class User {
     private boolean isAdmin;
     private double fine;
     private ArrayList<Book> booksBorrowed;
-    private static FileManager db;
-
-    static {
-        db = new FileManager();
-    }
+    
 
     //constructor
     public User(int id, String username, String password, String fname, String lname, boolean isAdmin) {
@@ -28,9 +24,7 @@ public class User {
         this.fine = 0;
         this.booksBorrowed = new ArrayList<>();
         
-        if (db == null) {
-            db = new FileManager();
-        }
+        
     }
 
     //get methods
@@ -84,7 +78,7 @@ public class User {
     public static User login(String username, String password) {
         try {
             String sql = "SELECT * FROM User WHERE username = ? AND password = ?";
-            PreparedStatement ps = db.getConnection().prepareStatement(sql);
+            PreparedStatement ps = Library.db.getConnection().prepareStatement(sql);
             ps.setString(1, username);
             ps.setString(2, password);
             ResultSet rs = ps.executeQuery();
@@ -108,7 +102,7 @@ public class User {
     public void save() {
         try {
             String sql = "INSERT OR REPLACE INTO User (id, username, password, fname, lname, isAdmin, fine) VALUES (?, ?, ?, ?, ?, ?, ?)";
-            PreparedStatement ps = db.getConnection().prepareStatement(sql);
+            PreparedStatement ps = Library.db.getConnection().prepareStatement(sql);
             ps.setInt(1, id);
             ps.setString(2, username);
             ps.setString(3, password);
@@ -126,7 +120,7 @@ public class User {
     public static void deleteUser(int userId) {
         try {
             String sql = "DELETE FROM User WHERE id = ?";
-            PreparedStatement ps = db.getConnection().prepareStatement(sql);
+            PreparedStatement ps = Library.db.getConnection().prepareStatement(sql);
             ps.setInt(1, userId);
             ps.executeUpdate();
             ps.close();

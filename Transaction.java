@@ -8,7 +8,7 @@ public class Transaction {
     private LocalDate borrowDate;
     private LocalDate returnDate;
     private double fine;
-    private static FileManager db;
+    
 
     public Transaction(int transactionId, User user, Book book) {
         this.transactionId = transactionId;
@@ -16,10 +16,7 @@ public class Transaction {
         this.book = book;
         this.borrowDate = LocalDate.now();
         this.fine = 0.0;
-        
-        if (db == null) {
-            db = new FileManager();
-        }
+     
     }
 
     public Transaction(int transactionId, User user, Book book, LocalDate borrowDate) {
@@ -39,7 +36,7 @@ public class Transaction {
     public void save() {
         try {
             String sql = "INSERT INTO Transactions (transactionId, userId, bookIsbn, borrowDate, returnDate, fine) VALUES (?, ?, ?, ?, ?, ?)";
-            PreparedStatement ps = db.getConnection().prepareStatement(sql);
+            PreparedStatement ps = Library.db.getConnection().prepareStatement(sql);
             ps.setInt(1, transactionId);
             ps.setInt(2, user.getId());
             ps.setString(3, book.getIsbn());
@@ -71,7 +68,7 @@ public class Transaction {
     private void updateTransaction() {
         try {
             String sql = "UPDATE Transactions SET returnDate = ?, fine = ? WHERE transactionId = ?";
-            PreparedStatement ps = db.getConnection().prepareStatement(sql);
+            PreparedStatement ps = Library.db.getConnection().prepareStatement(sql);
             ps.setDate(1, java.sql.Date.valueOf(returnDate));
             ps.setDouble(2, fine);
             ps.setInt(3, transactionId);
@@ -85,7 +82,7 @@ public class Transaction {
     public static Transaction getTransaction(int userId, String bookIsbn) {
         try {
             String sql = "SELECT * FROM Transactions WHERE userId = ? AND bookIsbn = ? AND returnDate IS NULL";
-            PreparedStatement ps = db.getConnection().prepareStatement(sql);
+            PreparedStatement ps = Library.db.getConnection().prepareStatement(sql);
             ps.setInt(1, userId);
             ps.setString(2, bookIsbn);
             ResultSet rs = ps.executeQuery();
