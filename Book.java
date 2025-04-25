@@ -51,15 +51,34 @@ public class Book {
     // Database operations
     public void save() {
         try {
-            String sql = "INSERT OR REPLACE INTO Book (isbn, title, author, isAvailable, copies) VALUES (?, ?, ?, ?, ?)";
-            PreparedStatement ps = Library.db.getConnection().prepareStatement(sql);
-            ps.setString(1, isbn);
-            ps.setString(2, title);
-            ps.setString(3, author);
-            ps.setBoolean(4, isAvailable);
-            ps.setInt(5, copies);
-            ps.executeUpdate();
-            ps.close();
+            // First check if book exists
+            String checkSql = "SELECT copies FROM Book WHERE isbn = ?";
+            PreparedStatement checkPs = Library.db.getConnection().prepareStatement(checkSql);
+            checkPs.setString(1, isbn);
+            ResultSet rs = checkPs.executeQuery();
+            
+            if (rs.next()) {
+                // Book exists, update copies
+                int existingCopies = rs.getInt("copies");
+                String updateSql = "UPDATE Book SET copies = copies + ? WHERE isbn = ?";
+                PreparedStatement updatePs = Library.db.getConnection().prepareStatement(updateSql);
+                updatePs.setInt(1, copies);
+                updatePs.setString(2, isbn);
+                updatePs.executeUpdate();
+                updatePs.close();
+            } else {
+                // Book doesn't exist, insert new
+                String insertSql = "INSERT INTO Book (isbn, title, author, isAvailable, copies) VALUES (?, ?, ?, ?, ?)";
+                PreparedStatement insertPs = Library.db.getConnection().prepareStatement(insertSql);
+                insertPs.setString(1, isbn);
+                insertPs.setString(2, title);
+                insertPs.setString(3, author);
+                insertPs.setBoolean(4, isAvailable);
+                insertPs.setInt(5, copies);
+                insertPs.executeUpdate();
+                insertPs.close();
+            }
+            checkPs.close();
         } catch (SQLException e) {
             e.printStackTrace();
         }

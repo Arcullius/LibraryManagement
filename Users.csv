@@ -1,0 +1,3 @@
+   Username,Password,FirstName,LastName,IsAdmin
+   johndoe,password123,John,Doe,false
+   janedoe,password456,Jane,Doe,true
