@@ -448,6 +448,140 @@ public class Library {
     }
 
     private void viewAvailableBooks() {
+        System.out.println("Search by:");
+        System.out.println("1. ISBN");
+        System.out.println("2. Title");
+        System.out.println("3. Author");
+        System.out.println("4. View All Available Books");
+        System.out.print("Enter choice (1, 2, 3, or 4): ");
+        String choice = scanner.nextLine();
+
+        String searchSql;
+        String searchValue;
+
+        try {
+            if (choice.equals("1")) {
+                System.out.print("Enter ISBN of book: ");
+                searchValue = scanner.nextLine();
+                searchSql = "SELECT * FROM Book WHERE isbn = ? AND isAvailable = true";
+
+                PreparedStatement checkPs = db.getConnection().prepareStatement(searchSql);
+                checkPs.setString(1, searchValue);
+                ResultSet rs = checkPs.executeQuery();
+
+                List<String> isbns = new ArrayList<>();
+                int index = 1;
+                while (rs.next()) {
+                    String title = rs.getString("title");
+                    String isbn = rs.getString("isbn");
+                    int copies = rs.getInt("copies");
+
+                    System.out.printf("%d. %s (ISBN: %s, Copies: %d)%n", index++, title, isbn, copies);
+                    isbns.add(isbn);
+                }
+
+                if (isbns.isEmpty()) {
+                    System.out.println("No books found with that isbn.");
+                    promptEnter();
+                    return;
+                }
+            } 
+            else if (choice.equals("2")) {
+                System.out.print("Enter title of book: ");
+                searchValue = scanner.nextLine();
+                searchSql = "SELECT * FROM Book WHERE title LIKE ? AND isAvailable = true";
+
+                PreparedStatement checkPs = db.getConnection().prepareStatement(searchSql);
+                checkPs.setString(1, "%" + searchValue + "%");
+                ResultSet rs = checkPs.executeQuery();
+
+                List<String> isbns = new ArrayList<>();
+                int index = 1;
+                while (rs.next()) {
+                    String title = rs.getString("title");
+                    String isbn = rs.getString("isbn");
+                    int copies = rs.getInt("copies");
+
+                    System.out.printf("%d. %s (ISBN: %s, Copies: %d)%n", index++, title, isbn, copies);
+                    isbns.add(isbn);
+                }
+
+                if (isbns.isEmpty()) {
+                    System.out.println("No books found matching that title.");
+                    promptEnter();
+                    return;
+                }
+            }
+            else if (choice.equals("3")) {
+                System.out.print("Enter name of the author: ");
+                searchValue = scanner.nextLine();
+                searchSql = "SELECT * FROM Book WHERE author LIKE ? AND isAvailable = true";
+
+                PreparedStatement checkPs = db.getConnection().prepareStatement(searchSql);
+                checkPs.setString(1, "%" + searchValue + "%");
+                ResultSet rs = checkPs.executeQuery();
+
+                List<String> isbns = new ArrayList<>();
+                int index = 1;
+                while (rs.next()) {
+                    String title = rs.getString("title");
+                    String isbn = rs.getString("isbn");
+                    int copies = rs.getInt("copies");
+
+                    System.out.printf("%d. %s (ISBN: %s, Copies: %d)%n", index++, title, isbn, copies);
+                    isbns.add(isbn);
+                }
+
+                if (isbns.isEmpty()) {
+                    System.out.println("No books found with that author.");
+                    promptEnter();
+                    return;
+                }
+            }
+            else if (choice.equals("4")) {
+                // Show all available books
+                searchSql = "SELECT * FROM Book WHERE isAvailable = true ORDER BY title";
+                Statement stmt = db.getConnection().createStatement();
+                ResultSet rs = stmt.executeQuery(searchSql);
+
+                List<String> isbns = new ArrayList<>();
+                int index = 1;
+                
+                System.out.println("\nAvailable Books:");
+                System.out.println("ID | Title | Author | Copies");
+                System.out.println("----------------------------------------");
+                
+                while (rs.next()) {
+                    String title = rs.getString("title");
+                    String isbn = rs.getString("isbn");
+                    String author = rs.getString("author");
+                    int copies = rs.getInt("copies");
+
+                    System.out.printf("%d. %s | %s | %d copies%n", 
+                        index++, 
+                        title, 
+                        author,
+                        copies
+                    );
+                    isbns.add(isbn);
+                }
+
+                if (isbns.isEmpty()) {
+                    System.out.println("No books are currently available.");
+                    promptEnter();
+                    return;
+                }
+            }
+            else {
+                System.out.println("Invalid choice.");
+            }
+        } 
+        catch (SQLException | NumberFormatException e) {
+            System.out.println("Error viewing book: " + e.getMessage());
+        }
+        promptEnter();
+    }
+        /*
         try {
             String sql = "SELECT * FROM Book WHERE isAvailable = true";
             Statement stmt = db.getConnection().createStatement();
@@ -465,7 +599,7 @@ public class Library {
             System.out.println("Error viewing available books: " + e.getMessage());
         }
         promptEnter();
-    }
+        */
 
     private void borrowBookByISBN(String isbn) throws SQLException {
         // Create transaction
@@ -489,8 +623,9 @@ public class Library {
         System.out.println("Search by:");
         System.out.println("1. ISBN");
         System.out.println("2. Title");
-        System.out.println("3. View All Available Books");
-        System.out.print("Enter choice (1, 2, or 3): ");
+        System.out.println("3. Author");
+        System.out.println("4. View All Available Books");
+        System.out.print("Enter choice (1, 2, 3, or 4): ");
         String choice = scanner.nextLine();
 
         String searchSql;
@@ -550,6 +685,43 @@ public class Library {
                 }
             }
             else if (choice.equals("3")) {
+                System.out.print("Enter name of the author: ");
+                searchValue = scanner.nextLine();
+                searchSql = "SELECT * FROM Book WHERE author LIKE ? AND isAvailable = true";
+
+                PreparedStatement checkPs = db.getConnection().prepareStatement(searchSql);
+                checkPs.setString(1, "%" + searchValue + "%");
+                ResultSet rs = checkPs.executeQuery();
+
+                List<String> isbns = new ArrayList<>();
+                int index = 1;
+                while (rs.next()) {
+                    String title = rs.getString("title");
+                    String isbn = rs.getString("isbn");
+                    int copies = rs.getInt("copies");
+
+                    System.out.printf("%d. %s (ISBN: %s, Copies: %d)%n", index++, title, isbn, copies);
+                    isbns.add(isbn);
+                }
+
+                if (isbns.isEmpty()) {
+                    System.out.println("No books found with that author.");
+                    promptEnter();
+                    return;
+                }
+
+                System.out.print("Enter the number of the book to borrow (or 0 to cancel): ");
+                int choiceNum = Integer.parseInt(scanner.nextLine());
+
+                if (choiceNum == 0) {
+                    System.out.println("Canceled.");
+                } else if (choiceNum > 0 && choiceNum <= isbns.size()) {
+                    borrowBookByISBN(isbns.get(choiceNum - 1));
+                } else {
+                    System.out.println("Invalid selection.");
+                }
+            }
+            else if (choice.equals("4")) {
                 // Show all available books
                 searchSql = "SELECT * FROM Book WHERE isAvailable = true ORDER BY title";
                 Statement stmt = db.getConnection().createStatement();
