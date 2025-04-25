@@ -1217,16 +1217,17 @@ public class Library {
             ResultSet rs = stmt.executeQuery(sql);
             
             System.out.println("\nAvailable Users:");
-            System.out.println("ID | Name | Username");
+            System.out.println("ID | Name | Username | Fine");
             System.out.println("----------------------------------------");
             
             int index = 1;
             while (rs.next()) {
-                System.out.printf("%d. %s %s | %s%n",
+                System.out.printf("%d. %s %s | %s | $%.2f%n",
                     index++,
                     rs.getString("fname"),
                     rs.getString("lname"),
-                    rs.getString("username")
+                    rs.getString("username"),
+                    rs.getDouble("fine")
                 );
             }
             stmt.close();
@@ -1275,6 +1276,7 @@ public class Library {
                 System.out.println("Username: " + userRs.getString("username"));
                 System.out.println("First Name: " + userRs.getString("fname"));
                 System.out.println("Last Name: " + userRs.getString("lname"));
+                System.out.println("Current Fine: $" + userRs.getDouble("fine"));
                 
                 System.out.print("\nEnter new username (or press Enter to keep current): ");
                 String newUsername = scanner.nextLine();
@@ -1299,15 +1301,31 @@ public class Library {
                 if (newLname.isEmpty()) {
                     newLname = userRs.getString("lname");
                 }
+
+                System.out.print("Enter new fine amount (or press Enter to keep current): ");
+                String fineInput = scanner.nextLine();
+                double newFine = userRs.getDouble("fine");
+                if (!fineInput.isEmpty()) {
+                    try {
+                        newFine = Double.parseDouble(fineInput);
+                        if (newFine < 0) {
+                            System.out.println("Fine amount cannot be negative. Keeping current fine.");
+                            newFine = userRs.getDouble("fine");
+                        }
+                    } catch (NumberFormatException e) {
+                        System.out.println("Invalid number format. Keeping current fine.");
+                    }
+                }
                 
                 // Update user
-                String updateSql = "UPDATE User SET username = ?, password = ?, fname = ?, lname = ? WHERE id = ?";
+                String updateSql = "UPDATE User SET username = ?, password = ?, fname = ?, lname = ?, fine = ? WHERE id = ?";
                 PreparedStatement updatePs = db.getConnection().prepareStatement(updateSql);
                 updatePs.setString(1, newUsername);
                 updatePs.setString(2, newPassword);
                 updatePs.setString(3, newFname);
                 updatePs.setString(4, newLname);
-                updatePs.setInt(5, selectedId);
+                updatePs.setDouble(5, newFine);
+                updatePs.setInt(6, selectedId);
                 updatePs.executeUpdate();
                 updatePs.close();
                 
