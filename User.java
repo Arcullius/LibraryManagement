@@ -35,6 +35,7 @@ public class User {
     public ArrayList<Book> getBooksBorrowed() { return booksBorrowed; }
     public double getFine() { return fine; }
     public String getUsername() { return username; }
+    public String getPassword() { return password; }
     public boolean isAdmin() { return isAdmin; }
 
     //set methods
@@ -127,5 +128,13 @@ public class User {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    public void updateUser(String username, String password, String fname, String lname) {
+        this.username = username;
+        this.password = password;
+        this.fname = fname;
+        this.lname = lname;
+        save();
     }
 }

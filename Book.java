@@ -136,6 +136,14 @@ public class Book {
         }
     }
 
+    public void updateBook(String title, String author, int copies) {
+        this.title = title;
+        this.author = author;
+        this.copies = copies;
+        this.isAvailable = copies > 0;
+        updateBook();
+    }
+
     @Override
     public String toString() {
         return "Book: {" +

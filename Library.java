@@ -68,7 +68,9 @@ public class Library {
             System.out.println("7. View All Users");
             System.out.println("8. Mass Upload Books (CSV)");
             System.out.println("9. Mass Upload Users (CSV)");
-            System.out.println("10. Logout");
+            System.out.println("10. Update Book");
+            System.out.println("11. Update User");
+            System.out.println("12. Logout");
             System.out.print("Choose an option: ");
 
             int choice = scanner.nextInt();
@@ -84,7 +86,9 @@ public class Library {
                 case 7: viewAllUsers(); break;
                 case 8: massUploadBooks(); break;
                 case 9: massUploadUsers(); break;
-                case 10: 
+                case 10: updateBook(); break;
+                case 11: updateUser(); break;
+                case 12: 
                     currentUser = null;
                     System.out.println("Logged out successfully!");
                     return;
@@ -105,7 +109,8 @@ public class Library {
             System.out.println("4. View My Borrowed Books");
             System.out.println("5. View My Fines");
             System.out.println("6. Pay Fine");
-            System.out.println("7. Logout");
+            System.out.println("7. Update My Profile");
+            System.out.println("8. Logout");
             System.out.print("Choose an option: ");
 
             int choice = scanner.nextInt();
@@ -118,7 +123,8 @@ public class Library {
                 case 4: viewMyBorrowedBooks(); break;
                 case 5: viewMyFines(); break;
                 case 6: payFine(); break;
-                case 7:
+                case 7: updateMyProfile(); break;
+                case 8:
                     currentUser = null;
                     System.out.println("Logged out successfully!");
                     return;
@@ -1097,6 +1103,274 @@ public class Library {
             System.out.println("Failed to add: " + errorCount + " users");
         } catch (Exception e) {
             System.out.println("Error reading file: " + e.getMessage());
+        }
+        promptEnter();
+    }
+
+    private void updateBook() {
+        clearConsole();
+        System.out.println("=== Update Book ===");
+        
+        try {
+            // First show all books
+            String sql = "SELECT * FROM Book ORDER BY title";
+            Statement stmt = db.getConnection().createStatement();
+            ResultSet rs = stmt.executeQuery(sql);
+            
+            System.out.println("\nAvailable Books:");
+            System.out.println("ID | ISBN | Title | Author | Copies");
+            System.out.println("----------------------------------------");
+            
+            int index = 1;
+            while (rs.next()) {
+                System.out.printf("%d. %s | %s | %s | %d copies%n",
+                    index++,
+                    rs.getString("isbn"),
+                    rs.getString("title"),
+                    rs.getString("author"),
+                    rs.getInt("copies")
+                );
+            }
+            stmt.close();
+            
+            System.out.print("\nEnter the number of the book to update (or 0 to cancel): ");
+            int choice = scanner.nextInt();
+            scanner.nextLine(); // consume newline
+            
+            if (choice == 0) {
+                System.out.println("Operation cancelled.");
+                promptEnter();
+                return;
+            }
+            
+            // Get the selected book's ISBN
+            stmt = db.getConnection().createStatement();
+            rs = stmt.executeQuery(sql);
+            int currentIndex = 1;
+            String selectedIsbn = null;
+            
+            while (rs.next() && currentIndex <= choice) {
+                if (currentIndex == choice) {
+                    selectedIsbn = rs.getString("isbn");
+                    break;
+                }
+                currentIndex++;
+            }
+            stmt.close();
+            
+            if (selectedIsbn == null) {
+                System.out.println("Invalid selection.");
+                promptEnter();
+                return;
+            }
+            
+            Book book = Book.getBook(selectedIsbn);
+            if (book == null) {
+                System.out.println("Book not found.");
+                promptEnter();
+                return;
+            }
+            
+            System.out.println("\nCurrent book details:");
+            System.out.println("Title: " + book.getTitle());
+            System.out.println("Author: " + book.getAuthor());
+            System.out.println("Copies: " + book.getCopies());
+            
+            System.out.print("\nEnter new title (or press Enter to keep current): ");
+            String newTitle = scanner.nextLine();
+            if (!newTitle.isEmpty()) {
+                book.setTitle(newTitle);
+            }
+            
+            System.out.print("Enter new author (or press Enter to keep current): ");
+            String newAuthor = scanner.nextLine();
+            if (!newAuthor.isEmpty()) {
+                book.setAuthor(newAuthor);
+            }
+            
+            System.out.print("Enter new number of copies (or press Enter to keep current): ");
+            String copiesInput = scanner.nextLine();
+            if (!copiesInput.isEmpty()) {
+                try {
+                    int newCopies = Integer.parseInt(copiesInput);
+                    book.setCopies(newCopies);
+                } catch (NumberFormatException e) {
+                    System.out.println("Invalid number format. Copies not updated.");
+                }
+            }
+            
+            System.out.println("Book updated successfully!");
+        } catch (SQLException e) {
+            System.out.println("Error updating book: " + e.getMessage());
+        }
+        promptEnter();
+    }
+
+    private void updateUser() {
+        clearConsole();
+        System.out.println("=== Update User ===");
+        
+        try {
+            // First show all users
+            String sql = "SELECT * FROM User WHERE isAdmin = false ORDER BY fname, lname";
+            Statement stmt = db.getConnection().createStatement();
+            ResultSet rs = stmt.executeQuery(sql);
+            
+            System.out.println("\nAvailable Users:");
+            System.out.println("ID | Name | Username");
+            System.out.println("----------------------------------------");
+            
+            int index = 1;
+            while (rs.next()) {
+                System.out.printf("%d. %s %s | %s%n",
+                    index++,
+                    rs.getString("fname"),
+                    rs.getString("lname"),
+                    rs.getString("username")
+                );
+            }
+            stmt.close();
+            
+            System.out.print("\nEnter the number of the user to update (or 0 to cancel): ");
+            int choice = scanner.nextInt();
+            scanner.nextLine(); // consume newline
+            
+            if (choice == 0) {
+                System.out.println("Operation cancelled.");
+                promptEnter();
+                return;
+            }
+            
+            // Get the selected user's ID
+            stmt = db.getConnection().createStatement();
+            rs = stmt.executeQuery(sql);
+            int currentIndex = 1;
+            int selectedId = -1;
+            String selectedUsername = null;
+            
+            while (rs.next() && currentIndex <= choice) {
+                if (currentIndex == choice) {
+                    selectedId = rs.getInt("id");
+                    selectedUsername = rs.getString("username");
+                    break;
+                }
+                currentIndex++;
+            }
+            stmt.close();
+            
+            if (selectedId == -1) {
+                System.out.println("Invalid selection.");
+                promptEnter();
+                return;
+            }
+            
+            // Get current user details
+            String userSql = "SELECT * FROM User WHERE id = ?";
+            PreparedStatement userPs = db.getConnection().prepareStatement(userSql);
+            userPs.setInt(1, selectedId);
+            ResultSet userRs = userPs.executeQuery();
+            
+            if (userRs.next()) {
+                System.out.println("\nCurrent user details:");
+                System.out.println("Username: " + userRs.getString("username"));
+                System.out.println("First Name: " + userRs.getString("fname"));
+                System.out.println("Last Name: " + userRs.getString("lname"));
+                
+                System.out.print("\nEnter new username (or press Enter to keep current): ");
+                String newUsername = scanner.nextLine();
+                if (newUsername.isEmpty()) {
+                    newUsername = userRs.getString("username");
+                }
+                
+                System.out.print("Enter new password (or press Enter to keep current): ");
+                String newPassword = scanner.nextLine();
+                if (newPassword.isEmpty()) {
+                    newPassword = userRs.getString("password");
+                }
+                
+                System.out.print("Enter new first name (or press Enter to keep current): ");
+                String newFname = scanner.nextLine();
+                if (newFname.isEmpty()) {
+                    newFname = userRs.getString("fname");
+                }
+                
+                System.out.print("Enter new last name (or press Enter to keep current): ");
+                String newLname = scanner.nextLine();
+                if (newLname.isEmpty()) {
+                    newLname = userRs.getString("lname");
+                }
+                
+                // Update user
+                String updateSql = "UPDATE User SET username = ?, password = ?, fname = ?, lname = ? WHERE id = ?";
+                PreparedStatement updatePs = db.getConnection().prepareStatement(updateSql);
+                updatePs.setString(1, newUsername);
+                updatePs.setString(2, newPassword);
+                updatePs.setString(3, newFname);
+                updatePs.setString(4, newLname);
+                updatePs.setInt(5, selectedId);
+                updatePs.executeUpdate();
+                updatePs.close();
+                
+                System.out.println("User updated successfully!");
+            }
+            userPs.close();
+        } catch (SQLException e) {
+            System.out.println("Error updating user: " + e.getMessage());
+        }
+        promptEnter();
+    }
+
+    private void updateMyProfile() {
+        clearConsole();
+        System.out.println("=== Update My Profile ===");
+        
+        try {
+            System.out.println("\nCurrent profile details:");
+            System.out.println("Username: " + currentUser.getUsername());
+            System.out.println("First Name: " + currentUser.getFirstName());
+            System.out.println("Last Name: " + currentUser.getLastName());
+            
+            System.out.print("\nEnter new username (or press Enter to keep current): ");
+            String newUsername = scanner.nextLine();
+            if (newUsername.isEmpty()) {
+                newUsername = currentUser.getUsername();
+            }
+            
+            System.out.print("Enter new password (or press Enter to keep current): ");
+            String newPassword = scanner.nextLine();
+            if (newPassword.isEmpty()) {
+                newPassword = currentUser.getPassword();
+            }
+            
+            System.out.print("Enter new first name (or press Enter to keep current): ");
+            String newFname = scanner.nextLine();
+            if (newFname.isEmpty()) {
+                newFname = currentUser.getFirstName();
+            }
+            
+            System.out.print("Enter new last name (or press Enter to keep current): ");
+            String newLname = scanner.nextLine();
+            if (newLname.isEmpty()) {
+                newLname = currentUser.getLastName();
+            }
+            
+            // Update user
+            String updateSql = "UPDATE User SET username = ?, password = ?, fname = ?, lname = ? WHERE id = ?";
+            PreparedStatement updatePs = db.getConnection().prepareStatement(updateSql);
+            updatePs.setString(1, newUsername);
+            updatePs.setString(2, newPassword);
+            updatePs.setString(3, newFname);
+            updatePs.setString(4, newLname);
+            updatePs.setInt(5, currentUser.getId());
+            updatePs.executeUpdate();
+            updatePs.close();
+            
+            // Update current user object
+            currentUser.updateUser(newUsername, newPassword, newFname, newLname);
+            
+            System.out.println("Profile updated successfully!");
+        } catch (SQLException e) {
+            System.out.println("Error updating profile: " + e.getMessage());
         }
         promptEnter();
     }
