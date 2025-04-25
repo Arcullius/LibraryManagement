@@ -1,5 +1,5 @@
 -- Drop existing tables if they exist
-DROP TABLE IF EXISTS Transactions;
+-- DROP TABLE IF EXISTS Transactions;
 -- DROP TABLE IF EXISTS Book;
 --DROP TABLE IF EXISTS User;
 
@@ -24,20 +24,20 @@ DROP TABLE IF EXISTS Transactions;
 -- );
 
 -- Transaction table
-CREATE TABLE Transactions (
-    transactionId INTEGER PRIMARY KEY AUTOINCREMENT,
-    userId INTEGER NOT NULL,
-    bookIsbn INTEGER NOT NULL,
-    borrowDate DATE NOT NULL,
-    returnDate DATE,
-    fine DECIMAL(10,2) DEFAULT 0.0,
-    FOREIGN KEY (userId) REFERENCES User(id),
-    FOREIGN KEY (bookIsbn) REFERENCES Book(isbn)
-);
+-- CREATE TABLE Transactions (
+--     transactionId INTEGER PRIMARY KEY AUTOINCREMENT,
+--     userId INTEGER NOT NULL,
+--     bookIsbn INTEGER NOT NULL,
+--     borrowDate DATE NOT NULL,
+--     returnDate DATE,
+--     fine DECIMAL(10,2) DEFAULT 0.0,
+--     FOREIGN KEY (userId) REFERENCES User(id),
+--     FOREIGN KEY (bookIsbn) REFERENCES Book(isbn)
+-- );
 
 -- -- Insert admin user (password: admin123)
--- INSERT INTO User (id, username, password, fname, lname, isAdmin, fine) VALUES
--- (1, 'admin', 'admin123', 'System', 'Admin', TRUE, 0.0);
+INSERT INTO User (id, username, password, fname, lname, isAdmin, fine) VALUES
+(5, 'lancelot', 'tennis', 'lance', 'wilson', false, 14.0);
 
 -- Insert some sample books
 -- INSERT INTO Book (isbn, title, author, isAvailable, copies) VALUES

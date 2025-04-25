@@ -99,7 +99,7 @@ public class Library {
         while (true) {
             clearConsole();
             System.out.println("=== User Menu ===");
-            System.out.println("1. View Available Books");
+            System.out.println("1. Search Book");
             System.out.println("2. Borrow Book");
             System.out.println("3. Return Book");
             System.out.println("4. View My Borrowed Books");
@@ -112,7 +112,7 @@ public class Library {
             scanner.nextLine(); // consume newline
 
             switch (choice) {
-                case 1: viewAvailableBooks(); break;
+                case 1: searchBook(); break;
                 case 2: borrowBook(); break;
                 case 3: returnBook(); break;
                 case 4: viewMyBorrowedBooks(); break;
@@ -447,7 +447,7 @@ public class Library {
         promptEnter();
     }
 
-    private void viewAvailableBooks() {
+    private void searchBook() {
         System.out.println("Search by:");
         System.out.println("1. ISBN");
         System.out.println("2. Title");
@@ -1119,6 +1119,3 @@ public class Library {
         scanner.nextLine();
      }
 }
-
-
-
