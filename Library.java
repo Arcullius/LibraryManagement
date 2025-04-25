@@ -66,7 +66,9 @@ public class Library {
             System.out.println("5. View All Transactions");
             System.out.println("6. View All Books");
             System.out.println("7. View All Users");
-            System.out.println("8. Logout");
+            System.out.println("8. Mass Upload Books (CSV)");
+            System.out.println("9. Mass Upload Users (CSV)");
+            System.out.println("10. Logout");
             System.out.print("Choose an option: ");
 
             int choice = scanner.nextInt();
@@ -80,7 +82,9 @@ public class Library {
                 case 5: viewAllTransactions(); break;
                 case 6: viewAllBooks(); break;
                 case 7: viewAllUsers(); break;
-                case 8: 
+                case 8: massUploadBooks(); break;
+                case 9: massUploadUsers(); break;
+                case 10: 
                     currentUser = null;
                     System.out.println("Logged out successfully!");
                     return;
@@ -100,7 +104,8 @@ public class Library {
             System.out.println("3. Return Book");
             System.out.println("4. View My Borrowed Books");
             System.out.println("5. View My Fines");
-            System.out.println("6. Logout");
+            System.out.println("6. Pay Fine");
+            System.out.println("7. Logout");
             System.out.print("Choose an option: ");
 
             int choice = scanner.nextInt();
@@ -112,7 +117,8 @@ public class Library {
                 case 3: returnBook(); break;
                 case 4: viewMyBorrowedBooks(); break;
                 case 5: viewMyFines(); break;
-                case 6:
+                case 6: payFine(); break;
+                case 7:
                     currentUser = null;
                     System.out.println("Logged out successfully!");
                     return;
@@ -190,10 +196,113 @@ public class Library {
 
     private void removeBook() {
         clearConsole();
-        System.out.print("Enter ISBN of book to remove: ");
-        String isbn = scanner.nextLine();
-        Book.deleteBook(isbn);
-        System.out.println("Book removed successfully!");
+        System.out.println("=== Remove Book ===");
+        
+        // First show all books
+        try {
+            String sql = "SELECT * FROM Book ORDER BY title";
+            Statement stmt = db.getConnection().createStatement();
+            ResultSet rs = stmt.executeQuery(sql);
+            
+            System.out.println("\nAvailable Books:");
+            System.out.println("ID | ISBN | Title | Author | Copies");
+            System.out.println("----------------------------------------");
+            
+            int index = 1;
+            while (rs.next()) {
+                System.out.printf("%d. %s | %s | %s | %d copies%n",
+                    index++,
+                    rs.getString("isbn"),
+                    rs.getString("title"),
+                    rs.getString("author"),
+                    rs.getInt("copies")
+                );
+            }
+            stmt.close();
+            
+            System.out.print("\nEnter the number of the book to remove (or 0 to cancel): ");
+            int choice = scanner.nextInt();
+            scanner.nextLine(); // consume newline
+            
+            if (choice == 0) {
+                System.out.println("Operation cancelled.");
+                promptEnter();
+                return;
+            }
+            
+            // Get the selected book's ISBN
+            stmt = db.getConnection().createStatement();
+            rs = stmt.executeQuery(sql);
+            int currentIndex = 1;
+            String selectedIsbn = null;
+            String selectedTitle = null;
+            int currentCopies = 0;
+            
+            while (rs.next() && currentIndex <= choice) {
+                if (currentIndex == choice) {
+                    selectedIsbn = rs.getString("isbn");
+                    selectedTitle = rs.getString("title");
+                    currentCopies = rs.getInt("copies");
+                    break;
+                }
+                currentIndex++;
+            }
+            stmt.close();
+            
+            if (selectedIsbn == null) {
+                System.out.println("Invalid selection.");
+                promptEnter();
+                return;
+            }
+            
+            System.out.println("\nSelected book: " + selectedTitle);
+            System.out.println("Current number of copies: " + currentCopies);
+            System.out.print("Enter number of copies to remove (or 'all' to remove all copies): ");
+            
+            String input = scanner.nextLine().trim();
+            int copiesToRemove;
+            
+            if (input.equalsIgnoreCase("all")) {
+                copiesToRemove = currentCopies;
+            } else {
+                try {
+                    copiesToRemove = Integer.parseInt(input);
+                    if (copiesToRemove <= 0) {
+                        System.out.println("Number of copies must be positive.");
+                        promptEnter();
+                        return;
+                    }
+                    if (copiesToRemove > currentCopies) {
+                        System.out.println("Cannot remove more copies than available.");
+                        promptEnter();
+                        return;
+                    }
+                } catch (NumberFormatException e) {
+                    System.out.println("Invalid input. Please enter a number or 'all'.");
+                    promptEnter();
+                    return;
+                }
+            }
+            
+            if (copiesToRemove == currentCopies) {
+                // Remove all copies - delete the book
+                Book.deleteBook(selectedIsbn);
+                System.out.println("Book '" + selectedTitle + "' has been completely removed from the library.");
+            } else {
+                // Update copies
+                String updateSql = "UPDATE Book SET copies = copies - ? WHERE isbn = ?";
+                PreparedStatement updatePs = db.getConnection().prepareStatement(updateSql);
+                updatePs.setInt(1, copiesToRemove);
+                updatePs.setString(2, selectedIsbn);
+                updatePs.executeUpdate();
+                updatePs.close();
+                
+                System.out.println("Removed " + copiesToRemove + " copies of '" + selectedTitle + "'.");
+                System.out.println("Remaining copies: " + (currentCopies - copiesToRemove));
+            }
+        } catch (SQLException e) {
+            System.out.println("Error removing book: " + e.getMessage());
+        }
         promptEnter();
     }
 
@@ -203,10 +312,75 @@ public class Library {
 
     private void removeUser() {
         clearConsole();
-        System.out.print("Enter user ID to remove: ");
-        int userId = scanner.nextInt();
-        User.deleteUser(userId);
-        System.out.println("User removed successfully!");
+        System.out.println("=== Remove User ===");
+        
+        // First show all users
+        try {
+            String sql = "SELECT * FROM User WHERE isAdmin = false ORDER BY fname, lname";
+            Statement stmt = db.getConnection().createStatement();
+            ResultSet rs = stmt.executeQuery(sql);
+            
+            System.out.println("\nAvailable Users:");
+            System.out.println("ID | Name | Username");
+            System.out.println("----------------------------------------");
+            
+            int index = 1;
+            while (rs.next()) {
+                System.out.printf("%d. %s %s | %s%n",
+                    index++,
+                    rs.getString("fname"),
+                    rs.getString("lname"),
+                    rs.getString("username")
+                );
+            }
+            stmt.close();
+            
+            System.out.print("\nEnter the number of the user to remove (or 0 to cancel): ");
+            int choice = scanner.nextInt();
+            scanner.nextLine(); // consume newline
+            
+            if (choice == 0) {
+                System.out.println("Operation cancelled.");
+                promptEnter();
+                return;
+            }
+            
+            // Get the selected user's ID
+            stmt = db.getConnection().createStatement();
+            rs = stmt.executeQuery(sql);
+            int currentIndex = 1;
+            int selectedId = -1;
+            String selectedName = null;
+            
+            while (rs.next() && currentIndex <= choice) {
+                if (currentIndex == choice) {
+                    selectedId = rs.getInt("id");
+                    selectedName = rs.getString("fname") + " " + rs.getString("lname");
+                    break;
+                }
+                currentIndex++;
+            }
+            stmt.close();
+            
+            if (selectedId == -1) {
+                System.out.println("Invalid selection.");
+                promptEnter();
+                return;
+            }
+            
+            // Confirm deletion
+            System.out.print("\nAre you sure you want to remove user '" + selectedName + "'? (yes/no): ");
+            String confirm = scanner.nextLine().trim().toLowerCase();
+            
+            if (confirm.equals("yes")) {
+                User.deleteUser(selectedId);
+                System.out.println("User '" + selectedName + "' has been removed successfully.");
+            } else {
+                System.out.println("Operation cancelled.");
+            }
+        } catch (SQLException e) {
+            System.out.println("Error removing user: " + e.getMessage());
+        }
         promptEnter();
     }
 
@@ -315,7 +489,8 @@ public class Library {
         System.out.println("Search by:");
         System.out.println("1. ISBN");
         System.out.println("2. Title");
-        System.out.print("Enter choice (1 or 2): ");
+        System.out.println("3. View All Available Books");
+        System.out.print("Enter choice (1, 2, or 3): ");
         String choice = scanner.nextLine();
 
         String searchSql;
@@ -373,7 +548,53 @@ public class Library {
                 } else {
                     System.out.println("Invalid selection.");
                 }
-            } 
+            }
+            else if (choice.equals("3")) {
+                // Show all available books
+                searchSql = "SELECT * FROM Book WHERE isAvailable = true ORDER BY title";
+                Statement stmt = db.getConnection().createStatement();
+                ResultSet rs = stmt.executeQuery(searchSql);
+
+                List<String> isbns = new ArrayList<>();
+                int index = 1;
+                
+                System.out.println("\nAvailable Books:");
+                System.out.println("ID | Title | Author | Copies");
+                System.out.println("----------------------------------------");
+                
+                while (rs.next()) {
+                    String title = rs.getString("title");
+                    String isbn = rs.getString("isbn");
+                    String author = rs.getString("author");
+                    int copies = rs.getInt("copies");
+
+                    System.out.printf("%d. %s | %s | %d copies%n", 
+                        index++, 
+                        title, 
+                        author,
+                        copies
+                    );
+                    isbns.add(isbn);
+                }
+
+                if (isbns.isEmpty()) {
+                    System.out.println("No books are currently available.");
+                    promptEnter();
+                    return;
+                }
+
+                System.out.print("\nEnter the number of the book to borrow (or 0 to cancel): ");
+                int choiceNum = Integer.parseInt(scanner.nextLine());
+
+                if (choiceNum == 0) {
+                    System.out.println("Canceled.");
+                } else if (choiceNum > 0 && choiceNum <= isbns.size()) {
+                    borrowBookByISBN(isbns.get(choiceNum - 1));
+                } else {
+                    System.out.println("Invalid selection.");
+                }
+                stmt.close();
+            }
             else {
                 System.out.println("Invalid choice.");
             }
@@ -381,65 +602,7 @@ public class Library {
         catch (SQLException | NumberFormatException e) {
             System.out.println("Error borrowing book: " + e.getMessage());
         }
-
         promptEnter();
-        /*
-        System.out.println("Search by:");
-        System.out.println("1. ISBN");
-        System.out.println("2. Title");
-        System.out.print("Enter choice (1 or 2): ");
-        String choice = scanner.nextLine();
-
-        String searchSql;
-        String searchValue;
-
-        try {
-            if (choice.equals("1")) {
-                System.out.print("Enter ISBN of book to borrow: ");
-                searchValue = scanner.nextLine();
-                searchSql = "SELECT * FROM Book WHERE isbn = ? AND isAvailable = true";
-            } else if (choice.equals("2")) {
-                System.out.print("Enter title of book to borrow: ");
-                searchValue = scanner.nextLine();
-                searchSql = "SELECT * FROM Book WHERE title LIKE ? AND isAvailable = true";
-                searchValue = "%" + searchValue + "%"; // support partial matches
-            } else {
-                System.out.println("Invalid choice.");
-                return;
-            }
-
-            PreparedStatement checkPs = db.getConnection().prepareStatement(searchSql);
-            checkPs.setString(1, searchValue);
-            ResultSet rs = checkPs.executeQuery();
-
-            if (rs.next()) {
-                String isbn = rs.getString("isbn");
-
-                // Create transaction
-                String transactionSql = "INSERT INTO Transactions (userId, bookIsbn, borrowDate) VALUES (?, ?, ?)";
-                PreparedStatement transPs = db.getConnection().prepareStatement(transactionSql);
-                transPs.setInt(1, currentUser.getId());
-                transPs.setString(2, isbn);
-                transPs.setDate(3, java.sql.Date.valueOf(LocalDate.now()));
-                transPs.executeUpdate();
-
-                // Update book availability
-                String updateSql = "UPDATE Book SET copies = copies - 1, isAvailable = (copies > 1) WHERE isbn = ?";
-                PreparedStatement updatePs = db.getConnection().prepareStatement(updateSql);
-                updatePs.setString(1, isbn);
-                updatePs.executeUpdate();
-
-                System.out.println("Book borrowed successfully!");
-            } 
-            else {
-                System.out.println("Book is not available or doesn't exist.");
-            }
-        } 
-        catch (SQLException e) {
-            System.out.println("Error borrowing book: " + e.getMessage());
-        }
-        promptEnter();
-        */
     }
 
     private void returnBook() {
@@ -575,6 +738,216 @@ public class Library {
         }
         promptEnter();
     }
+
+    private void payFine() {
+        clearConsole();
+        System.out.println("=== Pay Fine ===");
+        
+        try {
+            // Get current fine amount
+            String sql = "SELECT fine FROM User WHERE id = ?";
+            PreparedStatement ps = db.getConnection().prepareStatement(sql);
+            ps.setInt(1, currentUser.getId());
+            ResultSet rs = ps.executeQuery();
+            
+            if (rs.next()) {
+                double currentFine = rs.getDouble("fine");
+                
+                if (currentFine <= 0) {
+                    System.out.println("You don't have any outstanding fines.");
+                    promptEnter();
+                    return;
+                }
+                
+                System.out.printf("Your current fine balance: $%.2f%n", currentFine);
+                System.out.print("Enter amount to pay (or 'all' to pay full amount): $");
+                
+                String input = scanner.nextLine().trim();
+                double paymentAmount;
+                
+                if (input.equalsIgnoreCase("all")) {
+                    paymentAmount = currentFine;
+                } else {
+                    try {
+                        paymentAmount = Double.parseDouble(input);
+                        if (paymentAmount <= 0) {
+                            System.out.println("Payment amount must be positive.");
+                            promptEnter();
+                            return;
+                        }
+                        if (paymentAmount > currentFine) {
+                            System.out.println("Payment amount cannot exceed your fine balance.");
+                            promptEnter();
+                            return;
+                        }
+                    } catch (NumberFormatException e) {
+                        System.out.println("Invalid input. Please enter a number or 'all'.");
+                        promptEnter();
+                        return;
+                    }
+                }
+                
+                // Update fine in database
+                String updateSql = "UPDATE User SET fine = fine - ? WHERE id = ?";
+                PreparedStatement updatePs = db.getConnection().prepareStatement(updateSql);
+                updatePs.setDouble(1, paymentAmount);
+                updatePs.setInt(2, currentUser.getId());
+                updatePs.executeUpdate();
+                updatePs.close();
+                
+                // Get updated fine amount
+                ps = db.getConnection().prepareStatement(sql);
+                ps.setInt(1, currentUser.getId());
+                rs = ps.executeQuery();
+                rs.next();
+                double remainingFine = rs.getDouble("fine");
+                
+                System.out.printf("\nPayment successful!%n");
+                System.out.printf("Amount paid: $%.2f%n", paymentAmount);
+                System.out.printf("Remaining balance: $%.2f%n", remainingFine);
+                
+                // Update currentUser's fine amount
+                currentUser.setFine(remainingFine);
+            }
+            ps.close();
+        } catch (SQLException e) {
+            System.out.println("Error processing payment: " + e.getMessage());
+        }
+        promptEnter();
+    }
+
+    private void massUploadBooks() {
+        clearConsole();
+        System.out.println("=== Mass Upload Books ===");
+        System.out.println("Please prepare a CSV file with the following format:");
+        System.out.println("ISBN,Title,Author,Copies");
+        System.out.println("Example: 9780061120084,To Kill a Mockingbird,Harper Lee,3");
+        System.out.print("Enter the path to your CSV file: ");
+        
+        String filePath = scanner.nextLine();
+        try {
+            java.nio.file.Path path = java.nio.file.Paths.get(filePath);
+            List<String> lines = java.nio.file.Files.readAllLines(path);
+            
+            int successCount = 0;
+            int errorCount = 0;
+            int duplicateCount = 0;
+            
+            // Skip header line
+            for (int i = 1; i < lines.size(); i++) {
+                String line = lines.get(i);
+                String[] parts = line.split(",");
+                
+                if (parts.length == 4) {
+                    try {
+                        String isbn = parts[0].trim();
+                        String title = parts[1].trim();
+                        String author = parts[2].trim();
+                        int copies = Integer.parseInt(parts[3].trim());
+                        
+                        // Check if book exists
+                        String checkSql = "SELECT copies FROM Book WHERE isbn = ?";
+                        PreparedStatement checkPs = db.getConnection().prepareStatement(checkSql);
+                        checkPs.setString(1, isbn);
+                        ResultSet rs = checkPs.executeQuery();
+                        
+                        if (rs.next()) {
+                            int existingCopies = rs.getInt("copies");
+                            System.out.println("Book with ISBN " + isbn + " already exists. Adding " + copies + " copies to existing " + existingCopies + " copies.");
+                            duplicateCount++;
+                        }
+                        
+                        Book book = new Book(isbn, title, author, copies);
+                        book.save();
+                        successCount++;
+                        checkPs.close();
+                    } catch (NumberFormatException e) {
+                        System.out.println("Error in line " + (i + 1) + ": Invalid number format for copies");
+                        errorCount++;
+                    } catch (Exception e) {
+                        System.out.println("Error in line " + (i + 1) + ": " + e.getMessage());
+                        errorCount++;
+                    }
+                } else {
+                    System.out.println("Error in line " + (i + 1) + ": Invalid format");
+                    errorCount++;
+                }
+            }
+            
+            System.out.println("\nUpload Summary:");
+            System.out.println("Successfully added: " + successCount + " books");
+            System.out.println("Duplicate books updated: " + duplicateCount + " books");
+            System.out.println("Failed to add: " + errorCount + " books");
+        } catch (Exception e) {
+            System.out.println("Error reading file: " + e.getMessage());
+        }
+        promptEnter();
+    }
+
+    private void massUploadUsers() {
+        clearConsole();
+        System.out.println("=== Mass Upload Users ===");
+        System.out.println("Please prepare a CSV file with the following format:");
+        System.out.println("Username,Password,FirstName,LastName,IsAdmin");
+        System.out.println("Example: johndoe,password123,John,Doe,false");
+        System.out.print("Enter the path to your CSV file: ");
+        
+        String filePath = scanner.nextLine();
+        try {
+            java.nio.file.Path path = java.nio.file.Paths.get(filePath);
+            List<String> lines = java.nio.file.Files.readAllLines(path);
+            
+            int successCount = 0;
+            int errorCount = 0;
+            
+            // Skip header line
+            for (int i = 1; i < lines.size(); i++) {
+                String line = lines.get(i);
+                String[] parts = line.split(",");
+                
+                if (parts.length == 5) {
+                    try {
+                        String username = parts[0].trim();
+                        String password = parts[1].trim();
+                        String fname = parts[2].trim();
+                        String lname = parts[3].trim();
+                        boolean isAdmin = Boolean.parseBoolean(parts[4].trim());
+                        
+                        PreparedStatement ps = db.getConnection().prepareStatement(
+                            "INSERT INTO User (username, password, fname, lname, isAdmin) VALUES (?, ?, ?, ?, ?)",
+                            Statement.RETURN_GENERATED_KEYS
+                        );
+                        ps.setString(1, username);
+                        ps.setString(2, password);
+                        ps.setString(3, fname);
+                        ps.setString(4, lname);
+                        ps.setBoolean(5, isAdmin);
+                        ps.executeUpdate();
+                        
+                        ResultSet rs = ps.getGeneratedKeys();
+                        if (rs.next()) {
+                            successCount++;
+                        }
+                        ps.close();
+                    } catch (Exception e) {
+                        System.out.println("Error in line " + (i + 1) + ": " + e.getMessage());
+                        errorCount++;
+                    }
+                } else {
+                    System.out.println("Error in line " + (i + 1) + ": Invalid format");
+                    errorCount++;
+                }
+            }
+            
+            System.out.println("\nUpload Summary:");
+            System.out.println("Successfully added: " + successCount + " users");
+            System.out.println("Failed to add: " + errorCount + " users");
+        } catch (Exception e) {
+            System.out.println("Error reading file: " + e.getMessage());
+        }
+        promptEnter();
+    }
+
     public static void clearConsole() {
         try {
             String os = System.getProperty("os.name");
