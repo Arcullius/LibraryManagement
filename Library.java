@@ -3,6 +3,7 @@ import java.sql.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 
 public class Library {
@@ -70,7 +71,8 @@ public class Library {
             System.out.println("9. Mass Upload Users (CSV)");
             System.out.println("10. Update Book");
             System.out.println("11. Update User");
-            System.out.println("12. Logout");
+            System.out.println("12. View Statistics");
+            System.out.println("13. Logout");
             System.out.print("Choose an option: ");
 
             int choice = scanner.nextInt();
@@ -88,7 +90,8 @@ public class Library {
                 case 9: massUploadUsers(); break;
                 case 10: updateBook(); break;
                 case 11: updateUser(); break;
-                case 12: 
+                case 12: viewAdminStatistics(); break;
+                case 13:
                     currentUser = null;
                     System.out.println("Logged out successfully!");
                     return;
@@ -109,8 +112,11 @@ public class Library {
             System.out.println("4. View My Borrowed Books");
             System.out.println("5. View My Fines");
             System.out.println("6. Pay Fine");
-            System.out.println("7. Update My Profile");
-            System.out.println("8. Logout");
+            System.out.println("7. Reserve Book");
+            System.out.println("8. View My Reservations");
+            System.out.println("9. View Statistics");
+            System.out.println("10. Update My Profile");
+            System.out.println("11. Logout");
             System.out.print("Choose an option: ");
 
             int choice = scanner.nextInt();
@@ -123,8 +129,11 @@ public class Library {
                 case 4: viewMyBorrowedBooks(); break;
                 case 5: viewMyFines(); break;
                 case 6: payFine(); break;
-                case 7: updateMyProfile(); break;
-                case 8:
+                case 7: reserveBook(); break;
+                case 8: viewMyReservations(); break;
+                case 9: viewUserStatistics(); break;
+                case 10: updateMyProfile(); break;
+                case 11:
                     currentUser = null;
                     System.out.println("Logged out successfully!");
                     return;
@@ -1391,6 +1400,301 @@ public class Library {
             System.out.println("Error updating profile: " + e.getMessage());
         }
         promptEnter();
+    }
+
+    private void reserveBook() {
+        clearConsole();
+        System.out.println("=== Reserve Book ===");
+        
+        try {
+            // Show all unavailable books
+            String sql = "SELECT * FROM Book WHERE copies = 0 ORDER BY title";
+            Statement stmt = db.getConnection().createStatement();
+            ResultSet rs = stmt.executeQuery(sql);
+            
+            System.out.println("\nUnavailable Books:");
+            System.out.println("ID | ISBN | Title | Author");
+            System.out.println("----------------------------------------");
+            
+            List<String> isbns = new ArrayList<>();
+            int index = 1;
+            while (rs.next()) {
+                System.out.printf("%d. %s | %s | %s%n",
+                    index++,
+                    rs.getString("isbn"),
+                    rs.getString("title"),
+                    rs.getString("author")
+                );
+                isbns.add(rs.getString("isbn"));
+            }
+            stmt.close();
+            
+            if (isbns.isEmpty()) {
+                System.out.println("No books are currently unavailable.");
+                promptEnter();
+                return;
+            }
+            
+            System.out.print("\nEnter the number of the book to reserve (or 0 to cancel): ");
+            int choice = scanner.nextInt();
+            scanner.nextLine(); // consume newline
+            
+            if (choice == 0) {
+                System.out.println("Operation cancelled.");
+                promptEnter();
+                return;
+            }
+            
+            if (choice < 1 || choice > isbns.size()) {
+                System.out.println("Invalid selection.");
+                promptEnter();
+                return;
+            }
+            
+            String selectedIsbn = isbns.get(choice - 1);
+            
+            // Check if user already has an active reservation for this book
+            List<Reservation> userReservations = Reservation.getUserReservations(currentUser.getId());
+            for (Reservation reservation : userReservations) {
+                if (reservation.getBookIsbn().equals(selectedIsbn) && reservation.isActive()) {
+                    System.out.println("You already have an active reservation for this book.");
+                    promptEnter();
+                    return;
+                }
+            }
+            
+            // Create new reservation
+            Reservation reservation = new Reservation(currentUser.getId(), selectedIsbn);
+            reservation.save();
+            
+            System.out.println("Book reserved successfully! You will be notified when it becomes available.");
+        } catch (SQLException e) {
+            System.out.println("Error reserving book: " + e.getMessage());
+        }
+        promptEnter();
+    }
+
+    private void viewMyReservations() {
+        clearConsole();
+        System.out.println("=== My Reservations ===");
+        
+        try {
+            List<Reservation> reservations = Reservation.getUserReservations(currentUser.getId());
+            
+            if (reservations.isEmpty()) {
+                System.out.println("You have no reservations.");
+                promptEnter();
+                return;
+            }
+            
+            System.out.println("\nYour Reservations:");
+            System.out.println("ID | Book | Reservation Date | Status");
+            System.out.println("----------------------------------------");
+            
+            for (Reservation reservation : reservations) {
+                String bookSql = "SELECT title FROM Book WHERE isbn = ?";
+                PreparedStatement bookPs = db.getConnection().prepareStatement(bookSql);
+                bookPs.setString(1, reservation.getBookIsbn());
+                ResultSet bookRs = bookPs.executeQuery();
+                bookRs.next();
+                String bookTitle = bookRs.getString("title");
+                bookPs.close();
+                
+                String status = reservation.isActive() ? 
+                    (reservation.isNotified() ? "Available - Notified" : "Waiting") : 
+                    "Cancelled";
+                
+                System.out.printf("%d. %s | %s | %s%n",
+                    reservation.getReservationId(),
+                    bookTitle,
+                    reservation.getReservationDate(),
+                    status
+                );
+            }
+        } catch (SQLException e) {
+            System.out.println("Error viewing reservations: " + e.getMessage());
+        }
+        promptEnter();
+    }
+
+    private void viewUserStatistics() {
+        clearConsole();
+        System.out.println("=== Library Statistics ===");
+        System.out.println("1. Most Borrowed Books");
+        System.out.println("2. Hardest to Get Books");
+        System.out.println("3. Never Borrowed Books");
+        System.out.print("Choose an option: ");
+        
+        int choice = scanner.nextInt();
+        scanner.nextLine(); // consume newline
+        
+        switch (choice) {
+            case 1:
+                viewMostBorrowedBooks(5);
+                break;
+            case 2:
+                viewHardestToGetBooks(5);
+                break;
+            case 3:
+                viewNeverBorrowedBooks();
+                break;
+            default:
+                System.out.println("Invalid option!");
+        }
+        promptEnter();
+    }
+
+    private void viewAdminStatistics() {
+        clearConsole();
+        System.out.println("=== Library Statistics ===");
+        System.out.println("1. Most Borrowed Books");
+        System.out.println("2. Hardest to Get Books");
+        System.out.println("3. Never Borrowed Books");
+        System.out.println("4. Most Active Users");
+        System.out.println("5. Books with Highest Overdue Rate");
+        System.out.println("6. Monthly Borrowing Trends");
+        System.out.print("Choose an option: ");
+        
+        int choice = scanner.nextInt();
+        scanner.nextLine(); // consume newline
+        
+        switch (choice) {
+            case 1:
+                viewMostBorrowedBooks(10);
+                break;
+            case 2:
+                viewHardestToGetBooks(10);
+                break;
+            case 3:
+                viewNeverBorrowedBooks();
+                break;
+            case 4:
+                viewMostActiveUsers(10);
+                break;
+            case 5:
+                viewBooksWithHighestOverdueRate(10);
+                break;
+            case 6:
+                viewMonthlyBorrowingTrends();
+                break;
+            default:
+                System.out.println("Invalid option!");
+        }
+        promptEnter();
+    }
+
+    private void viewMostBorrowedBooks(int limit) {
+        clearConsole();
+        System.out.println("=== Most Borrowed Books ===");
+        
+        List<Map<String, Object>> stats = Statistics.getMostBorrowedBooks(limit);
+        
+        System.out.println("\nTop " + limit + " Most Borrowed Books:");
+        System.out.println("Title | Author | Borrow Count");
+        System.out.println("----------------------------------------");
+        
+        for (Map<String, Object> book : stats) {
+            System.out.printf("%s | %s | %d%n",
+                book.get("title"),
+                book.get("author"),
+                book.get("borrowCount")
+            );
+        }
+    }
+
+    private void viewHardestToGetBooks(int limit) {
+        clearConsole();
+        System.out.println("=== Hardest to Get Books ===");
+        
+        List<Map<String, Object>> stats = Statistics.getHardestToGetBooks(limit);
+        
+        System.out.println("\nTop " + limit + " Hardest to Get Books:");
+        System.out.println("Title | Author | Reservation Count");
+        System.out.println("----------------------------------------");
+        
+        for (Map<String, Object> book : stats) {
+            System.out.printf("%s | %s | %d%n",
+                book.get("title"),
+                book.get("author"),
+                book.get("reservationCount")
+            );
+        }
+    }
+
+    private void viewNeverBorrowedBooks() {
+        clearConsole();
+        System.out.println("=== Never Borrowed Books ===");
+        
+        List<Map<String, Object>> stats = Statistics.getNeverBorrowedBooks();
+        
+        System.out.println("\nNever Borrowed Books:");
+        System.out.println("Title | Author | Copies");
+        System.out.println("----------------------------------------");
+        
+        for (Map<String, Object> book : stats) {
+            System.out.printf("%s | %s | %d%n",
+                book.get("title"),
+                book.get("author"),
+                book.get("copies")
+            );
+        }
+    }
+
+    private void viewMostActiveUsers(int limit) {
+        clearConsole();
+        System.out.println("=== Most Active Users ===");
+        
+        List<Map<String, Object>> stats = Statistics.getMostActiveUsers(limit);
+        
+        System.out.println("\nTop " + limit + " Most Active Users:");
+        System.out.println("Name | Borrow Count");
+        System.out.println("----------------------------------------");
+        
+        for (Map<String, Object> user : stats) {
+            System.out.printf("%s | %d%n",
+                user.get("name"),
+                user.get("borrowCount")
+            );
+        }
+    }
+
+    private void viewBooksWithHighestOverdueRate(int limit) {
+        clearConsole();
+        System.out.println("=== Books with Highest Overdue Rate ===");
+        
+        List<Map<String, Object>> stats = Statistics.getBooksWithHighestOverdueRate(limit);
+        
+        System.out.println("\nTop " + limit + " Books with Highest Overdue Rate:");
+        System.out.println("Title | Author | Overdue Rate (%) | Total Borrows");
+        System.out.println("----------------------------------------");
+        
+        for (Map<String, Object> book : stats) {
+            System.out.printf("%s | %s | %.2f%% | %d%n",
+                book.get("title"),
+                book.get("author"),
+                book.get("overdueRate"),
+                book.get("totalBorrows")
+            );
+        }
+    }
+
+    private void viewMonthlyBorrowingTrends() {
+        clearConsole();
+        System.out.println("=== Monthly Borrowing Trends ===");
+        
+        List<Map<String, Object>> stats = Statistics.getMonthlyBorrowingTrends();
+        
+        System.out.println("\nMonthly Borrowing Trends:");
+        System.out.println("Year | Month | Borrow Count");
+        System.out.println("----------------------------------------");
+        
+        for (Map<String, Object> trend : stats) {
+            System.out.printf("%d | %d | %d%n",
+                trend.get("year"),
+                trend.get("month"),
+                trend.get("borrowCount")
+            );
+        }
     }
 
     public static void clearConsole() {
