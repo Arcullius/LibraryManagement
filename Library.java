@@ -581,25 +581,6 @@ public class Library {
         }
         promptEnter();
     }
-        /*
-        try {
-            String sql = "SELECT * FROM Book WHERE isAvailable = true";
-            Statement stmt = db.getConnection().createStatement();
-            ResultSet rs = stmt.executeQuery(sql);
-            clearConsole();
-            while (rs.next()) {
-                System.out.println("ISBN: " + rs.getString("isbn"));
-                System.out.println("Title: " + rs.getString("title"));
-                System.out.println("Author: " + rs.getString("author"));
-                System.out.println("Copies Available: " + rs.getInt("copies"));
-                System.out.println("------------------------");
-            }
-            stmt.close();
-        } catch (SQLException e) {
-            System.out.println("Error viewing available books: " + e.getMessage());
-        }
-        promptEnter();
-        */
 
     private void borrowBookByISBN(String isbn) throws SQLException {
         // Create transaction
