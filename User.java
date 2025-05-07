@@ -53,7 +53,7 @@ public class User {
     //removes book from the user's borrowed books
     public void returnBook(Book book) {
         for (int i = 0; i < booksBorrowed.size(); i++) {
-            if (booksBorrowed.get(i).getIsbn()==(book.getIsbn())) {
+            if (booksBorrowed.get(i).getISBN()==(book.getISBN())) {
                 booksBorrowed.remove(i);
                 break;
             }

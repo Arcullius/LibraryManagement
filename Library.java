@@ -72,7 +72,8 @@ public class Library {
             System.out.println("10. Update Book");
             System.out.println("11. Update User");
             System.out.println("12. View Statistics");
-            System.out.println("13. Logout");
+            System.out.println("13. Process Interlibrary Loans");
+            System.out.println("14. Logout");
             System.out.print("Choose an option: ");
 
             int choice = scanner.nextInt();
@@ -91,7 +92,8 @@ public class Library {
                 case 10: updateBook(); break;
                 case 11: updateUser(); break;
                 case 12: viewAdminStatistics(); break;
-                case 13:
+                case 13: processInterlibraryLoans(); break;
+                case 14:
                     currentUser = null;
                     System.out.println("Logged out successfully!");
                     return;
@@ -115,8 +117,9 @@ public class Library {
             System.out.println("7. Reserve Book");
             System.out.println("8. View My Reservations");
             System.out.println("9. View Statistics");
-            System.out.println("10. Update My Profile");
-            System.out.println("11. Logout");
+            System.out.println("10. Request Interlibrary Loan");
+            System.out.println("11. Update My Profile");
+            System.out.println("12. Logout");
             System.out.print("Choose an option: ");
 
             int choice = scanner.nextInt();
@@ -132,8 +135,9 @@ public class Library {
                 case 7: reserveBook(); break;
                 case 8: viewMyReservations(); break;
                 case 9: viewUserStatistics(); break;
-                case 10: updateMyProfile(); break;
-                case 11:
+                case 10: requestInterlibraryLoan(); break;
+                case 11: updateMyProfile(); break;
+                case 12:
                     currentUser = null;
                     System.out.println("Logged out successfully!");
                     return;
@@ -1694,6 +1698,203 @@ public class Library {
                 trend.get("month"),
                 trend.get("borrowCount")
             );
+        }
+    }
+
+    // Interlibrary Loan Methods
+    private void requestInterlibraryLoan() {
+        clearConsole();
+        System.out.println("=== Request Interlibrary Loan ===");
+        
+        try {
+            // Show all unavailable books
+            String sql = "SELECT * FROM Book WHERE copies = 0 ORDER BY title";
+            Statement stmt = db.getConnection().createStatement();
+            ResultSet rs = stmt.executeQuery(sql);
+            
+            System.out.println("\nUnavailable Books:");
+            System.out.println("ID | ISBN | Title | Author | Home Library");
+            System.out.println("----------------------------------------");
+            
+            List<String> isbns = new ArrayList<>();
+            int index = 1;
+            while (rs.next()) {
+                System.out.printf("%d. %s | %s | %s | %s%n",
+                    index++,
+                    rs.getString("isbn"),
+                    rs.getString("title"),
+                    rs.getString("author"),
+                    rs.getString("homeLibrary")
+                );
+                isbns.add(rs.getString("isbn"));
+            }
+            stmt.close();
+            
+            if (isbns.isEmpty()) {
+                System.out.println("No books are currently unavailable.");
+                promptEnter();
+                return;
+            }
+            
+            System.out.print("\nEnter the number of the book to request (or 0 to cancel): ");
+            int choice = scanner.nextInt();
+            scanner.nextLine(); // consume newline
+            
+            if (choice == 0) {
+                System.out.println("Operation cancelled.");
+                promptEnter();
+                return;
+            }
+            
+            if (choice < 1 || choice > isbns.size()) {
+                System.out.println("Invalid selection.");
+                promptEnter();
+                return;
+            }
+            
+            String selectedIsbn = isbns.get(choice - 1);
+            Book book = Book.getBook(selectedIsbn);
+            
+            if (book == null) {
+                System.out.println("Error: Book not found.");
+                promptEnter();
+                return;
+            }
+            
+            // Request the book from the home library
+            if (requestBook(book, book.getHomeLibrary())) {
+                System.out.println("Interlibrary loan request submitted successfully!");
+                System.out.println("You will be notified when the book becomes available.");
+            } else {
+                System.out.println("Failed to submit interlibrary loan request.");
+                System.out.println("The book may not be available at the home library.");
+            }
+        } catch (SQLException e) {
+            System.out.println("Error requesting interlibrary loan: " + e.getMessage());
+        }
+        promptEnter();
+    }
+
+    private void processInterlibraryLoans() {
+        clearConsole();
+        System.out.println("=== Process Interlibrary Loans ===");
+        
+        try {
+            // Show all books that are available for interlibrary loan
+            String sql = "SELECT * FROM Book WHERE copies > 0 AND homeLibrary = 'LOCAL' ORDER BY title";
+            Statement stmt = db.getConnection().createStatement();
+            ResultSet rs = stmt.executeQuery(sql);
+            
+            System.out.println("\nAvailable Books for Interlibrary Loan:");
+            System.out.println("ID | ISBN | Title | Author | Available Copies");
+            System.out.println("----------------------------------------");
+            
+            List<String> isbns = new ArrayList<>();
+            int index = 1;
+            while (rs.next()) {
+                System.out.printf("%d. %s | %s | %s | %d%n",
+                    index++,
+                    rs.getString("isbn"),
+                    rs.getString("title"),
+                    rs.getString("author"),
+                    rs.getInt("copies")
+                );
+                isbns.add(rs.getString("isbn"));
+            }
+            stmt.close();
+            
+            if (isbns.isEmpty()) {
+                System.out.println("No books are available for interlibrary loan.");
+                promptEnter();
+                return;
+            }
+            
+            System.out.print("\nEnter the number of the book to process (or 0 to cancel): ");
+            int choice = scanner.nextInt();
+            scanner.nextLine(); // consume newline
+            
+            if (choice == 0) {
+                System.out.println("Operation cancelled.");
+                promptEnter();
+                return;
+            }
+            
+            if (choice < 1 || choice > isbns.size()) {
+                System.out.println("Invalid selection.");
+                promptEnter();
+                return;
+            }
+            
+            String selectedIsbn = isbns.get(choice - 1);
+            Book book = Book.getBook(selectedIsbn);
+            
+            if (book == null) {
+                System.out.println("Error: Book not found.");
+                promptEnter();
+                return;
+            }
+            
+            System.out.print("Enter the destination library: ");
+            String destinationLibrary = scanner.nextLine();
+            
+            // Send the book to the requesting library
+            if (sendBook(book, destinationLibrary)) {
+                System.out.println("Book sent successfully to " + destinationLibrary);
+                book.setCopies(book.getCopies() - 1);
+            } else {
+                System.out.println("Failed to send book to " + destinationLibrary);
+            }
+        } catch (SQLException e) {
+            System.out.println("Error processing interlibrary loan: " + e.getMessage());
+        }
+        promptEnter();
+    }
+
+    // Interlibrary Loan Network Methods
+    public boolean requestBook(IBook book, String requestingLibrary) {
+        // This method will be implemented by the networking layer
+        // For now, we'll simulate a successful request
+        System.out.println("Requesting book " + book.getTitle() + " from " + book.getHomeLibrary());
+        return true;
+    }
+
+    public boolean sendBook(IBook book, String destinationLibrary) {
+        // This method will be implemented by the networking layer
+        // For now, we'll simulate a successful send
+        System.out.println("Sending book " + book.getTitle() + " to " + destinationLibrary);
+        return true;
+    }
+
+    public boolean receiveBook(IBook book) {
+        try {
+            // Add the book to our inventory
+            Book localBook = new Book(
+                book.getISBN(),
+                book.getTitle(),
+                book.getAuthor(),
+                1,
+                book.getHomeLibrary()
+            );
+            localBook.save();
+            return true;
+        } catch (Exception e) {
+            System.out.println("Error receiving book: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public boolean bookAvailable(IBook book) {
+        try {
+            String sql = "SELECT copies FROM Book WHERE isbn = ? AND copies > 0";
+            PreparedStatement ps = db.getConnection().prepareStatement(sql);
+            ps.setString(1, book.getISBN());
+            ResultSet rs = ps.executeQuery();
+            boolean available = rs.next();
+            ps.close();
+            return available;
+        } catch (SQLException e) {
+            System.out.println("Error checking book availability: " + e.getMessage());
+            return false;
         }
     }
 
